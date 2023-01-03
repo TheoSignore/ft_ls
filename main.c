@@ -3,9 +3,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
-#include <sys/acl.h>
-size_t printed = 0;
-size_t foo = 0;
+
 void	print_bits(char c)
 {
 	char	bits;
@@ -20,21 +18,43 @@ void	print_bits(char c)
 		c <<= 1;
 		bits--;
 	}
-	printed++;
 	write(1, " ", 1);
-	foo++;
-	if ( foo >= 4)
-	{
-		write(1, "\b\n", 2);
-		foo = 0;
-	}
+}
+
+static char	get_type(mode_t mode)
+{
+	if (S_ISREG(mode))
+		return '-';
+	else if (S_ISDIR(mode))
+		return 'd';
+	else if (S_ISLNK(mode))
+		return 'l';
+	else if (S_ISCHR(mode))
+		return 'c';
+	else if (S_ISBLK(mode))
+		return 'b';
+	else if (S_ISFIFO(mode))
+		return 'f';
+	else if (S_ISSOCK(mode))
+		return 's';
+	return '?';
+}
+
+static void	get_perms(mode_t mode, char* buf)
+{
+	buf[0] = (mode & S_IRUSR) ? 'r' : '-';
+	buf[1] = (mode & S_IWUSR) ? 'w' : '-';
+	buf[2] = (mode & S_IXUSR) ? 'x' : '-';
+	buf[3] = (mode & S_IRGRP) ? 'r' : '-';
+	buf[4] = (mode & S_IWGRP) ? 'w' : '-';
+	buf[5] = (mode & S_IXGRP) ? 'x' : '-';
+	buf[6] = (mode & S_IROTH) ? 'r' : '-';
+	buf[7] = (mode & S_IWOTH) ? 'w' : '-';
+	buf[8] = (mode & S_IXOTH) ? 'x' : '-';
 }
 
 int	main(int ac, char** av)
 {
-	acl_t	base;
-	(void)base;
-	printf("%zu\n", sizeof(acl_t));
 	if (ac != 2)
 		return (1);
 	struct stat	stats;
@@ -43,41 +63,14 @@ int	main(int ac, char** av)
 		perror("FAILED");
 		return (1);
 	}
-	char	s[100];
-	size_t	a = listxattr(av[1], s, 100);
-	write(1, s, a);
-	write(1, "\n", 1);
-	a = getxattr(av[1], "system.nfs4_acl", s, 100);
-	//write(1, s, a);
-	char flag = 0;
-	for (size_t i = 0; i < 80 ; i++)
-	{
-		if (s[i] >= 'A' && s[i] <= 'Z')
-		{
-			foo = 0;
-			if (!flag)
-			{
-				flag = 1;
-				write(1, "\n", 1);
-			}
-			write(1, &(s[i]), 1);
-			printed++;
-		}
-		else
-		{
-			if (flag)
-			{
-				flag = 0;
-				write(1, "\n", 1);
-			}
-			print_bits(s[i]);
-		}
-	}
-	printf("\n%zu\n%li %lu %u %lu %u %u %lu %li %li %li %s %s\n",
-		printed,
+	char	buf[11];
+	buf[10] = '\0';
+	buf[0] = get_type(stats.st_mode);
+	get_perms(stats.st_mode, &(buf[1]));
+	printf("\n%s %li %lu %lu %u %u %lu %li %li %li %s\n",
+		buf,
 		stats.st_dev,
 		stats.st_ino,
-		stats.st_mode,
 		stats.st_nlink,
 		stats.st_uid,
 		stats.st_gid,
@@ -85,9 +78,7 @@ int	main(int ac, char** av)
 		stats.st_size,
 		stats.st_blksize,
 		stats.st_blocks,
-		av[1],
-		s
+		av[1]
 	);
-	printf("%i\n", *((int*)(&(s[76]))));
 	return (0);
 }
