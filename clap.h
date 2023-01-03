@@ -14,7 +14,7 @@
 	}	arg_t;
 
 	arg_t*	clap(char** available_options, int ac, char** av);
-	// available_options -> ["-l", "-sf*", "--env-file="]
+	// available_options -> ["-l", "-sf*", "--env-file=", ]
 	// if the option must be followed by a value, specify a '*' at the end
 	// if the option must be attached to a value, specify the '='
 

@@ -25,10 +25,12 @@ char	ft_strncmp(const char *s1, const char *s2, size_t n)
 {
 	size_t	lens1 = ft_strlen(s1) + 1;
 	size_t	lens2 = ft_strlen(s2) + 1;
-	for (size_t i = 0 ; i < n && i < lens1 && i < lens2 ; i++)
+	size_t	i = 0;
+	while(i < n && i < lens1 && i < lens2)
 	{
 		if (s1[i] != s2[i])
 			return (0);
+		i++;
 	}
-	return (1);
+	return (i >= n ? 1 : 0);
 }
