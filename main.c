@@ -3,7 +3,9 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
+#include <sys/sysmacros.h>
 
+char lel = 0;
 void	print_bits(char c)
 {
 	char	bits;
@@ -18,26 +20,36 @@ void	print_bits(char c)
 		c <<= 1;
 		bits--;
 	}
-	write(1, " ", 1);
+	write (1, " ", 1);
+	lel++;
+	if (lel >= 4)
+	{
+		write(1, "\n", 1);
+		lel = 0;
+	}
 }
 
 static char	get_type(mode_t mode)
 {
-	if (S_ISREG(mode))
-		return '-';
-	else if (S_ISDIR(mode))
-		return 'd';
-	else if (S_ISLNK(mode))
-		return 'l';
-	else if (S_ISCHR(mode))
-		return 'c';
-	else if (S_ISBLK(mode))
-		return 'b';
-	else if (S_ISFIFO(mode))
-		return 'f';
-	else if (S_ISSOCK(mode))
-		return 's';
-	return '?';
+	switch (mode & S_IFMT)
+	{
+		case S_IFREG:
+			return '-';
+		case S_IFDIR:
+			return 'd';
+		case S_IFLNK:
+			return 'l';
+		case S_IFSOCK:
+			return 's';
+		case S_IFBLK:
+			return 'b';
+		case S_IFCHR:
+			return 'c';
+		case S_IFIFO:
+			return 'p';
+		default:
+			return '?';
+	}
 }
 
 static void	get_perms(mode_t mode, char* buf)
@@ -67,18 +79,52 @@ int	main(int ac, char** av)
 	buf[10] = '\0';
 	buf[0] = get_type(stats.st_mode);
 	get_perms(stats.st_mode, &(buf[1]));
-	printf("\n%s %li %lu %lu %u %u %lu %li %li %li %s\n",
+	printf(
+		"%s hl=%lu oid=%u gid=%u",
 		buf,
-		stats.st_dev,
-		stats.st_ino,
 		stats.st_nlink,
 		stats.st_uid,
-		stats.st_gid,
-		stats.st_rdev,
+		stats.st_gid
+	);
+	if (stats.st_dev)
+		printf(" maj=%u min=%u", major(stats.st_rdev), minor(stats.st_rdev));
+	else
+		printf(" 0");
+	printf(
+		" sz=%li bsz=%li blk=%li %s\n",
 		stats.st_size,
 		stats.st_blksize,
 		stats.st_blocks,
 		av[1]
 	);
+	char	xattr[1000];
+	printf (" (%zu)\n", write(1, xattr, listxattr(av[1], xattr, 1000)));
+	char	attr_value[1000];
+	size_t	fock = getxattr(av[1], xattr, attr_value, 1000);
+	printf(" (%zu)\n", write(1, attr_value, fock));
+	char flag = 0;
+	for (size_t i = 0 ; i < fock ; i++)
+	{
+		if (attr_value[i] > ' ' && attr_value[i] <= '~')
+		{
+			lel = 0;
+			if (!flag)
+			{
+				flag = 1;
+				printf("\n");
+			}
+			printf("%c", attr_value[i]);
+		}
+		else
+		{
+			if (flag)
+			{
+				flag = 0;
+				printf("\n");
+			}
+			printf("%x ", attr_value[i]);
+			//print_bits(attr_value[i]);
+		}
+	}
 	return (0);
 }
