@@ -1,5 +1,5 @@
 #include "str_utils.h"
-
+//test
 size_t	ft_strlen(char const *s)
 {
 	size_t	size = 0;
