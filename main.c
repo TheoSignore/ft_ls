@@ -7,83 +7,6 @@
 #include <grp.h>
 #include <time.h>
 
-typedef	struct my_time_s
-{
-	int	year;
-	int	month;
-	int	day;
-	int	seconds;
-}	mytime_t;
-
-static int	year_atoi(char* year)
-{
-	int res = year[3] - 48;
-	res += (year[2] - 48) * 10;
-	res += (year[1] - 48) * 100;
-	res += (year[0] - 48) * 1000;
-	return (res);
-}
-
-static int	month_to_i(char* month)
-{
-	if (month[0] == 'F')
-		return (2);
-	if (month[0] == 'S')
-		return (9);
-	if (month[0] == 'O')
-		return (10);
-	if (month[0] == 'N')
-		return (11);
-	if (month[0] == 'D')
-		return (12);
-	if (month[0] == 'M')
-	{
-		if (month[2] == 'r')
-			return (3);
-		return (5);
-	}
-	if (month[1] == 'a')
-		return (1);
-	if (month[3] == 'n')
-		return (6);
-	return (7);
-}
-
-static int	day_atoi(char* day)
-{
-	return	((day[1] - 48) + ((day[0] == ' ') ? 0 : (day[0] - 48) * 10));
-}
-
-// "hour:minute:seconds" to seconds
-static size_t	ahms_to_isec(char* hms)
-{
-	size_t res = (hms[7] - 48) + ((hms[6] - 48) * 10);
-	res += ((hms[4] - 48) + ((hms[3] - 48) * 10)) * 60;
-	res += ((hms[1] - 48) + ((hms[0] - 48) * 10)) * 3600;
-	return (res);
-}
-
-//Wed Jun 30 21:49:08 1993\n
-//0   4   8  11       20
-static void	ctime_to_my_time(char* sctime, mytime_t* mytime)
-{
-	mytime->year = year_atoi(&sctime[20]);
-	mytime->month = month_to_i(&sctime[4]);
-	mytime->day = day_atoi(&sctime[8]);
-	mytime->seconds = ahms_to_isec(&sctime[11]);
-}
-
-static void	print_mytime(mytime_t* mytime)
-{
-	printf(
-		"%i years, %i months, %i days and %i seconds.\n",
-		mytime->year,
-		mytime->month,
-		mytime->day,
-		mytime->seconds
-	);
-}
-
 size_t	ft_strlen(char const *s)
 {
 	size_t	size = 0;
@@ -93,37 +16,6 @@ size_t	ft_strlen(char const *s)
 			size++;
 	}
 	return (size);
-}
-
-static char	is_recent(time_t timeval, char* str_timeval)
-{
-	static time_t	limit = 0;
-	static time_t	current_time = 0;
-	static mytime_t	current_mytime;
-
-	if (limit != 0 && timeval <= limit)
-		return (0);
-	if (current_time == 0)
-	{
-		current_time = time(NULL);
-		ctime_to_my_time(ctime(&current_time), &current_mytime);
-	}
-	mytime_t	mytime_file;
-	ctime_to_my_time(str_timeval, &mytime_file);
-
-	if ((current_mytime.year - mytime_file.year) >= 2)
-		return (0);
-	int	diff = current_mytime.month - mytime_file.month;
-	diff = diff < 0 ? diff + 12 : diff;
-	if (diff < 6)
-		return (1);
-	if (diff > 6)
-		return (0);
-	if (mytime_file.day > current_mytime.day)
-		return (1);
-	if (mytime_file.day < current_mytime.day)
-		return (0);
-	return (mytime_file.seconds >= current_mytime.seconds);
 }
 
 char lel = 0;
@@ -187,6 +79,8 @@ static void	get_perms(mode_t mode, char* buf)
 }
 
 
+//Wed Jun 30 21:49:08 1993\n
+//0   4   8  11       20
 
 int	main(int ac, char** av)
 {
@@ -203,7 +97,7 @@ int	main(int ac, char** av)
 	buf[0] = get_type(stats.st_mode);
 	get_perms(stats.st_mode, &(buf[1]));
 	printf(
-		"%s %lu %s %s",
+		"%s  %lu %s %s",
 		buf,
 		stats.st_nlink,
 		(getpwuid(stats.st_uid)->pw_name),
@@ -212,26 +106,26 @@ int	main(int ac, char** av)
 	if (stats.st_rdev)
 		printf(" %u, %u", major(stats.st_rdev), minor(stats.st_rdev));
 	else
-		printf(" 0 %li", stats.st_size);
-	char*	date = ctime(&stats.st_mtim.tv_sec);
+		printf(" %li", stats.st_size);
+	char*	date_tmp = ctime(&stats.st_mtim.tv_sec);
+	char	date[26];
+	for (size_t i = 0 ; i < 26 ; i++)
+		date[i] = date_tmp[i];
 	//date[ft_strlen(date) - 9] = '\0';
+	if (!is_recent(stats.st_mtim.tv_sec, date))
+	{
+		date[11] = ' ';
+		date[12] = date[20];
+		date[13] = date[21];
+		date[14] = date[22];
+		date[15] = date[23];
+	}
+		date[16] = '\0';
 	printf(
 		" %s %s\n",
-		date,
+		&date[4],
 		av[1]
 	);
-	time_t	current_time;
-	time(&current_time);
-	mytime_t	current_mytime;
-	mytime_t	file_mytime;
-
-	ctime_to_my_time(ctime(&current_time), &current_mytime);
-	printf("current time: '%s'\n", ctime(&current_time));
-	print_mytime(&current_mytime);
-
-	ctime_to_my_time(ctime(&stats.st_mtim.tv_sec), &file_mytime);
-	printf("file time: '%s'\n", ctime(&stats.st_mtim.tv_sec));
-	print_mytime(&file_mytime);
 	return (0);
 }
 
