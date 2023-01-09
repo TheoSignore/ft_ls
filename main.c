@@ -93,6 +93,7 @@ void	ft_memcpy(void* ptr1, void* ptr2, size_t n)
 
 typedef struct s_lsel
 {
+	char*			path;
 	char*			filename;
 	struct stat		file_stats;
 	struct s_lsel*	next_file;
@@ -113,52 +114,96 @@ static void	push_front_subfile(lsel_t* parent, lsel_t* sf)
 //		f->next_file = nf;
 //	}
 
-static lsel_t*	alloc_entry()
+static lsel_t*	create_entry(char* file_path)
 {
 	lsel_t*	res = malloc(sizeof(lsel_t));
 	if (res)
 	{
-		res->filename = NULL;
+		res->path = file_path;
+		size_t	i = 0;
+		while (file_path[i])
+			i++;
+		while (i && i != '/')
+			i--;
+		if (i)
+			i++;
+		res->filename = &(file_path[i]);
 		res->next_file = NULL;
 		res->subfile = NULL;
 	}
 	return res;
 }
 
-char*	ft_strdup(char* str)
+//char*	ft_strdup(char* str)
+//{
+//	size_t	len = ft_strlen(str);
+//	char*	res = malloc(len + 1);
+//	if (res)
+//	{
+//		for (size_t i = 0 ; i < len ; i++)
+//			res[i] = str[i];
+//		res[len] = '\0';
+//	}
+//	return (res);
+//}
+
+char*	join_path(char* str1, char* str2)
 {
-	size_t	len = ft_strlen(str);
-	char*	res = malloc(len + 1);
-	if (res)
+	size_t	len1 = ft_strlen(str1);
+	size_t	len2 = ft_strlen(str2);
+	size_t	len_res = len1 + len2 + (str1[len1 - 1] == '/' ? 1 : 2);
+	char*	res = malloc(len_res);
+	if (!res)
+		return (NULL);
+	for (size_t i = 0 ; i < len1 ; i++)
 	{
-		for (size_t i = 0 ; i < len ; i++)
-			res[i] = str[i];
-		res[len] = '\0';
+		*res = str1[i];
+		res++;
 	}
+	if (str1[len1 - 1] != '/')
+	{
+		*res = '/';
+		res++;
+	}
+	for (size_t i = 0 ; i <= len2 ; i++)
+	{
+		*res = str2[i];
+		res++;
+	}
+	res -= len_res;
 	return (res);
 }
 
 static lsel_t*	make_new_entry(char* file_path, char flag)
 {
-	lsel_t*	new_entry = alloc_entry();
+	lsel_t*	new_entry = create_entry(file_path);
 	if (!new_entry)
 		return NULL;
-	new_entry->filename = ft_strdup(file_path);
 	int res = 0;
-	if (flag)
+	if (flag == 0)
 		res = stat(file_path, &(new_entry->file_stats));
 	else
 		res = lstat(file_path, &(new_entry->file_stats));
 	(void)res;
+	if (res)
+	{
+		perror(new_entry->filename);
+		exit(1);
+	}
 	if (S_ISDIR(new_entry->file_stats.st_mode))
 	{
-		DIR*	dirptr = opendir(file_path);
-		printf("{%s}\n", file_path);
+		DIR*	dirptr = opendir(new_entry->filename);
 		struct dirent* subfile = readdir(dirptr);
+		subfile = readdir(dirptr);
+		subfile = readdir(dirptr);
 		while (subfile)
 		{
-			lsel_t*	new_sub_entry = make_new_entry(subfile->d_name, 0);
-			push_front_subfile(new_entry, new_sub_entry);
+			lsel_t*	new_sub_entry;
+			if (subfile->d_name[0] != '.' || flag == 2)
+			{
+				new_sub_entry = make_new_entry(join_path(new_entry->filename, subfile->d_name), 1);
+				push_front_subfile(new_entry, new_sub_entry);
+			}
 			subfile = readdir(dirptr);
 		}
 		closedir(dirptr);
@@ -180,14 +225,16 @@ size_t	lsel_len(lsel_t* el)
 void	print_lsel(lsel_t* root)
 {
 	size_t	subfile_number = lsel_len(root->subfile);
-	printf ("%s (%zu)\n\t", root->filename, subfile_number);
+	if (subfile_number == 0)
+		printf("%s ", root->filename);
+	else
+		printf ("\n%s (%zu)\n\t", root->filename, subfile_number);
 	lsel_t*	ptr = root->subfile;
 	while (ptr)
 	{
 		print_lsel(ptr);
 		ptr = ptr->next_file;
 	}
-	printf("\n");
 }
 
 //Wed Jun 30 21:49:08 1993\n
