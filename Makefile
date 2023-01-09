@@ -1,8 +1,7 @@
 SRCS	= main.c \
+		  time_stuff.c
 
 OBJS	= ${SRCS:.c=.o}
-
-BNS		= ${SRCBNS:.c=.o}
 
 #FLAGS	=  -Wall -Wextra -Werror
 FLAGS	=  -Wall -Wextra -Werror -g
@@ -22,7 +21,7 @@ fclean:		clean
 		rm -f ${NAME}
 
 ${NAME}:	${OBJS}
-		gcc ${FLAGS} ${NAME} ${OBJS}
+		gcc ${FLAGS} -o ${NAME} ${OBJS}
 
 re:		fclean all
 
