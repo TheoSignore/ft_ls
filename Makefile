@@ -1,5 +1,8 @@
 SRCS	= main.c \
-		  time_stuff.c
+		  time_stuff.c \
+		  file_tree.c \
+		  str_utils.c \
+		  long_listing.c
 
 OBJS	= ${SRCS:.c=.o}
 
