@@ -1,31 +1,44 @@
-SRCS	= main.c \
-		  time_stuff.c \
-		  file_tree.c \
-		  str_utils.c \
-		  long_listing.c
+SRCS	:=	main.c \
+			time_stuff.c \
+			file_tree.c \
+			str_utils.c \
+			long_listing.c
 
-OBJS	= ${SRCS:.c=.o}
+OBJS	=	${SRCS:.c=.o}
 
-#FLAGS	=  -Wall -Wextra -Werror
-FLAGS	=  -Wall -Wextra -Werror -g
-#FLAGS	=  -Wall -Wextra -Werror -g -fsanitize=address
+DEP		=	${SRCS:.c=.d}
 
-NAME	= ft_ls
+#FLAGS	:=  -Wall -Wextra -Werror
+FLAGS	:=  -Wall -Wextra -Werror -g
+#FLAGS	:=  -Wall -Wextra -Werror -g -fsanitize=address
+
+COMPILO	:= gcc
+
+NAME	:=	ft_ls
+
+.SUFFIXES: .c .o .d
+
+.c.d:
+		${COMPILO} -MM $< -MF ${<:.c=.d}
 
 .c.o:
-		gcc ${FLAGS} -c $< -o ${<:.c=.o}
+		${COMPILO} ${FLAGS} -c $< -o ${<:.c=.o}
 
-all:		${NAME}
+all:	dependencies ${NAME}
 
 clean:
-		rm -f ${OBJS} ${BNS}
+		rm -f ${OBJS}
+		rm -f ${DEP}
 
 fclean:		clean
 		rm -f ${NAME}
 
-${NAME}:	${OBJS}
-		gcc ${FLAGS} -o ${NAME} ${OBJS}
+${NAME}: ${OBJS}
+		${COMPILO} ${FLAGS} -o ${NAME} ${OBJS}
+
+dependencies:
+include ${DEP}
 
 re:		fclean all
 
-.PHONY:		all clean fclean re
+.PHONY:		all clean fclean re dependencies

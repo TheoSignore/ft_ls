@@ -34,3 +34,41 @@ char	ft_strncmp(const char *s1, const char *s2, size_t n)
 	}
 	return (i >= n ? 1 : 0);
 }
+
+char*	ft_strdup(const char* str)
+{
+	if (!str)
+		return (NULL);
+	size_t	str_len = ft_strlen(str);
+	char*	res = malloc(str_len + 1);
+	if (res)
+	{
+		for (size_t i = 0 ; i < str_len ; i++)
+			res[i] = str[i];
+		res[str_len] = '\0';
+	}
+	return (res);
+}
+
+char*	ft_itoa(int n)
+{
+	size_t	sbuf = 10;
+	char	buffer[12];
+
+	for (int i = 0 ; i < 12 ; i++)
+		buffer[i] = '\0';
+
+	char	sign = n < 0 ? 0 : 1;
+	long int	li = n < 0 ? -n : n;
+	while (li > 0)
+	{
+		buffer[sbuf] = (li % 10) + '0';
+		li /= 10;
+		sbuf--;
+	}
+	if (!sign)
+		buffer[sbuf] = '-';
+	else
+		sbuf++;
+	return (ft_strdup(&(buffer[sbuf])));
+}

@@ -1,3 +1,5 @@
+#include "long_listing.h"
+#include "time_stuff.h"
 
 static char	get_type(mode_t mode)
 {
@@ -35,7 +37,27 @@ static void	get_perms(mode_t mode, char* buf)
 	buf[8] = (mode & S_IXOTH) ? 'x' : '-';
 }
 
-file_listing_t*	create_file_listing(struct stat* file_stat)
+static char*	get_link_target(char* path)
+{
+	size_t	sbuf = 16;
+	size_t	target_len = 16;
+	while (1)
+	{
+		char	buffer[sbuf];
+		target_len = readlink(path, buffer, sbuf);
+		if (target_len == (size_t)(-1))
+			return (NULL);
+		else if (target_len < sbuf)
+		{
+			buffer[target_len] = '\0';
+			return (ft_strdup(buffer));
+		}
+		sbuf *= 2;
+	}
+	return (NULL);
+}
+
+file_listing_t*	create_file_listing(struct stat* file_stat, char* path, char* filename)
 {
 	file_listing_t*	res = malloc(sizeof(file_listing_t));
 	if (!res)
@@ -48,44 +70,57 @@ file_listing_t*	create_file_listing(struct stat* file_stat)
 		if (spwd)
 			res->owner_name = ft_strdup(spwd->pw_name);
 		else
-			res->owner_name = itoa(file_stat->st_uid);
+			res->owner_name = ft_itoa(file_stat->st_uid);
 	}
 	{
 		struct group*	grp = getgrgid(file_stat->st_gid);
 		if (grp)
 			res->group_name = ft_strdup(grp->gr_name);
 		else
-			res->group_name = itoa(file_stat->st_gid);
+			res->group_name = ft_itoa(file_stat->st_gid);
 	}
 	res->minor = minor(file_stat->st_dev);
 	res->major = major(file_stat->st_dev);
 	res->size = file_stat->st_size;
 	res->blksize = file_stat->st_blksize;
-	extract_and_format_time(file_stat->mtime, &(res->mitme));
+	extract_and_format_time(file_stat->st_mtime, (char*)&(res->mtime));
+	res->filename = ft_strdup(filename);
+	if (res->file_type == 'l')
+		res->target = get_link_target(path);
+	else
+		res->target = NULL;
+	res->next = NULL;
+	res->list_size = 0;
 	return (res);
 }
 
-/*
-	char	buf[11];
-	buf[10] = '\0';
-	buf[0] = get_type(stats.st_mode);
-	get_perms(stats.st_mode, &(buf[1]));
-	printf(
-		"%s %lu %s %s",
-		buf,
-		stats.st_nlink,
-		(getpwuid(stats.st_uid)->pw_name),
-		(getgrgid(stats.st_gid)->gr_name)
-	);
-	if (stats.st_rdev)
-		printf(" %u, %u", major(stats.st_rdev), minor(stats.st_rdev));
-	else
-		printf(" %li", stats.st_size);
-	char	mtime[13];
-	extract_and_format_time(stats.st_mtime, mtime);
-	printf(
-		" %s %s\n",
-		mtime,
-		av[1]
-	);
-*/
+void	destroy_file_listing(file_listing_t* flst)
+{
+	free(flst->owner_name);
+	free(flst->group_name);
+	free(flst->filename);
+	free(flst->target);
+	flst->owner_name = NULL;
+	flst->group_name = NULL;
+	flst->filename = NULL;
+	flst->target = NULL;
+	if (flst->next)
+		destroy_file_listing(flst->next);
+	flst->next = NULL;
+}
+
+size_t	get_listing_len(file_listing_t* flst, paddings_t* pds)
+{
+	size_t	res = 10 + 1
+		+ pds->len_nlinks + 1
+		+ pds->len_owner_name + 1
+		+ pds->len_group_name + 1
+		+ pds->len_size + 1
+		+ 13 + 1
+		+ ft_strlen(flst->filename) + 1;
+	if (flst->target)
+		res += 1 + 2 + 1 + ft_strlen(flst->target);
+	flst->list_size = res;
+	return (res);
+}
+

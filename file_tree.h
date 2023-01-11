@@ -8,7 +8,7 @@
 typedef struct s_file_tree_node
 {
 	char*						path;
-	char*						filename;
+	char*						filename; //points to an element of path
 	struct stat					file_stats;
 	struct s_file_tree_node*	next_file;
 	struct s_file_tree_node*	subfile;
