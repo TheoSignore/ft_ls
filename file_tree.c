@@ -34,6 +34,13 @@ static void	push_front_subfile(file_tree_node_t* parent, file_tree_node_t* sf)
 	parent->subfile = sf;
 }
 
+static void	add_back_next_file(file_tree_node_t* ftn, file_tree_node_t* nf)
+{
+	while (ftn->next_file)
+		ftn = ftn->next_file;
+	ftn->next_file = nf;
+}
+
 static file_tree_node_t*	create_file_tree_node(char* file_path)
 {
 	file_tree_node_t*	res = malloc(sizeof(file_tree_node_t));
@@ -43,7 +50,7 @@ static file_tree_node_t*	create_file_tree_node(char* file_path)
 		size_t	i = 0;
 		while (file_path[i])
 			i++;
-		while (i && i != '/')
+		while (i && file_path[i] != '/')
 			i--;
 		if (i)
 			i++;
@@ -67,12 +74,12 @@ file_tree_node_t*	create_file_tree(char* file_path, char flag)
 	(void)res;
 	if (res)
 	{
-		perror(new_entry->filename);
+		perror(file_path);
 		exit(1);
 	}
 	if (S_ISDIR(new_entry->file_stats.st_mode))
 	{
-		DIR*	dirptr = opendir(new_entry->filename);
+		DIR*	dirptr = opendir(new_entry->path);
 		struct dirent* subfile = readdir(dirptr);
 		subfile = readdir(dirptr);
 		subfile = readdir(dirptr);
@@ -81,7 +88,7 @@ file_tree_node_t*	create_file_tree(char* file_path, char flag)
 			file_tree_node_t*	new_sub_entry;
 			if (subfile->d_name[0] != '.' || flag == 2)
 			{
-				new_sub_entry = create_file_tree(join_path(new_entry->filename, subfile->d_name), 1);
+				new_sub_entry = create_file_tree(join_path(new_entry->path, subfile->d_name), 1);
 				push_front_subfile(new_entry, new_sub_entry);
 			}
 			subfile = readdir(dirptr);
@@ -115,4 +122,51 @@ void	print_file_tree(file_tree_node_t* root)
 		print_file_tree(ptr);
 		ptr = ptr->next_file;
 	}
+}
+
+
+file_tree_node_t*	dupftn(file_tree_node_t* ftn)
+{
+	file_tree_node_t*	res = malloc(sizeof(file_tree_node_t));
+	if (res)
+	{
+		size_t	ptrdiff = ftn->filename - ftn->path;
+		res->path = ft_strdup(ftn->path);
+		res->filename = res->path + ptrdiff;
+		ft_memcpy(&(ftn->file_stats), &(res->file_stats), sizeof(struct stat));
+		res->next_file = NULL;
+		res->subfile = ftn->subfile;
+	}
+	return (res);
+}
+
+void	func(file_tree_node_t* root, file_tree_node_t* ftn)
+{
+	if (root)
+	{
+		add_back_next_file(root, dupftn(ftn));
+	}
+	else
+		root = ftn;
+	file_tree_node_t*	ptr = ftn->subfile;
+	while (ptr)
+	{
+		if (ptr->subfile)
+			func(root, ptr);
+		ptr = ptr->next_file;
+	}
+}
+
+void	print_other_file_tree(file_tree_node_t* ftn)
+{
+	printf("%s:\n",ftn->path);
+	file_tree_node_t*	ptr = ftn->subfile;
+	while (ptr)
+	{
+		printf("%s ", ptr->filename);
+		ptr = ptr->next_file;
+	}
+	printf("\n\n");
+	if (ftn->next_file)
+		print_other_file_tree(ftn->next_file);
 }

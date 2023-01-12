@@ -7,5 +7,6 @@
 	char		ft_strncmp(const char *s1, const char *s2, size_t n);
 	char*		ft_strdup(const char* str);
 	char*		ft_itoa(int n);
+	void		ft_memcpy(void* ptr1, void* ptr2, size_t n);
 
 #endif

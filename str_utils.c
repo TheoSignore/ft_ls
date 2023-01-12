@@ -72,3 +72,12 @@ char*	ft_itoa(int n)
 		sbuf++;
 	return (ft_strdup(&(buffer[sbuf])));
 }
+
+void	ft_memcpy(void* ptr1, void* ptr2, size_t n)
+{
+	char*	sptr1 = ptr1;
+	char*	sptr2 = ptr2;
+
+	for (size_t i = 0 ; i < n ; i++)
+		sptr2[i] = sptr1[i];
+}

@@ -16,5 +16,7 @@ typedef struct s_file_tree_node
 
 file_tree_node_t*	create_file_tree(char* file_path, char flag);
 void				print_file_tree(file_tree_node_t* root);
+void				func(file_tree_node_t* root, file_tree_node_t* ftn);
+void				print_other_file_tree(file_tree_node_t* ftn);
 
 #endif
