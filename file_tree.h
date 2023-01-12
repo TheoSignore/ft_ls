@@ -4,6 +4,7 @@
 # include <sys/stat.h>
 # include <dirent.h>
 # include <stdio.h>
+# include <unistd.h>
 
 typedef struct s_file_tree_node
 {

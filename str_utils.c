@@ -81,3 +81,14 @@ void	ft_memcpy(void* ptr1, void* ptr2, size_t n)
 	for (size_t i = 0 ; i < n ; i++)
 		sptr2[i] = sptr1[i];
 }
+
+size_t	non_null_term_strcpy(char* src, char* dst)
+{
+	size_t	res = 0;
+	while (src[res])
+	{
+		dst[res] = src[res];
+		res++;
+	}
+	return (res);
+}

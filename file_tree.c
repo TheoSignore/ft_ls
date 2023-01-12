@@ -159,14 +159,30 @@ void	func(file_tree_node_t* root, file_tree_node_t* ftn)
 
 void	print_other_file_tree(file_tree_node_t* ftn)
 {
-	printf("%s:\n",ftn->path);
+	size_t	buffer_size = ft_strlen(ftn->path) + 2; // + ":\n"
+	buffer_size += ftn->next_file ? 1 : 0; // additionnal LF
 	file_tree_node_t*	ptr = ftn->subfile;
 	while (ptr)
 	{
-		printf("%s ", ptr->filename);
+		buffer_size += 1 + ft_strlen(ptr->filename);
 		ptr = ptr->next_file;
 	}
-	printf("\n\n");
+	char	*buffer = malloc(buffer_size);
+	buffer[buffer_size - 1] = '\n';
+	if (ftn->next_file)
+		buffer[buffer_size - 2] = '\n';
+	size_t	i = non_null_term_strcpy(ftn->path, buffer);
+	buffer[i++] = ':';
+	buffer[i++] = '\n';
+	ptr = ftn->subfile;
+	while (ptr)
+	{
+		i += non_null_term_strcpy(ptr->filename, &(buffer[i]));
+		ptr = ptr->next_file;
+		if (ptr)
+			buffer[i++] = ' ';
+	}
+	write(1, buffer, buffer_size);
 	if (ftn->next_file)
 		print_other_file_tree(ftn->next_file);
 }
