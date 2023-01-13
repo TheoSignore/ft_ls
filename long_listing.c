@@ -84,7 +84,6 @@ file_listing_t*	create_file_listing(struct stat* file_stat, char* path, char* fi
 	res->size = file_stat->st_size;
 	res->blksize = file_stat->st_blksize;
 	extract_and_format_time(file_stat->st_mtime, (char*)&(res->mtime));
-	res->filename = ft_strdup(filename);
 	if (res->file_type == 'l')
 		res->target = get_link_target(path);
 	else

@@ -28,10 +28,9 @@ typedef struct s_file_listing
 	size_t					size;
 	size_t					blksize;
 	char					mtime[13];
-	char*					filename;
 	char*					target;
-	struct s_file_listing*	next;
 	size_t					list_size;
+	struct s_file_listing*	next;
 }	file_listing_t;
 
 file_listing_t*	create_file_listing(struct stat* file_stat, char* path, char* filename);
