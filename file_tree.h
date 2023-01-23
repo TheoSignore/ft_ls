@@ -20,4 +20,13 @@ void				print_file_tree(file_tree_node_t* root);
 void				func(file_tree_node_t* root, file_tree_node_t* ftn);
 void				print_other_file_tree(file_tree_node_t* ftn);
 
+typedef struct s_directory
+{
+	char*					path;
+	char*					filename; // points inside path
+	struct stat				*file_stats;
+	struct s_directory		*next;
+	t_file					*content;
+}
+
 #endif
