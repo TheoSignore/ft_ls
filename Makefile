@@ -1,8 +1,4 @@
-SRCS	:=	main.c \
-			time_stuff.c \
-			file_tree.c \
-			str_utils.c \
-			long_listing.c
+SRCS	:=	main.c
 
 OBJS	=	${SRCS:.c=.o}
 
