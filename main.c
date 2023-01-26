@@ -148,17 +148,61 @@ static void	access_error(char* path)
 	perror(buffer);
 }
 
-static void	add_back_file(file_t** list, file_t* el)
+static int	ft_strcmp(char* str1, char* str2)
 {
-	file_t*	tmp = *list;
-	if (!tmp)
+	while (*str1 && *str2)
 	{
-		*list = el;
-		return ;
+		if (*str1 != *str2)
+			break;
+		str1++;
+		str2++;
 	}
-	while (tmp->next)
-		tmp = tmp->next;
-	tmp->next = el;
+	return (*str1 - *str2);
+}
+
+int	compare_value(size_t a, size_t b, int way)
+{
+	if (way)
+		return (a - b);
+	return (b - a);
+}
+
+
+static char	compare(file_t* a, file_t* b, char options) // <
+{
+	if (options & SORT_MTIME)
+	{
+		if (a->stats.st_nlink == 0)
+			lstat(a->path, &(a->stats));
+		if (b->stats.st_nlink == 0)
+			lstat(b->path, &(b->stats));
+		int	diff = compare_value(a->stats.mtime, b->stats.mtime, options & REVERSE)
+		if (diff >=
+	}
+	else
+	{
+		
+	}
+}
+
+static void	add_back_file(file_t** list, file_t* el, char options)
+{
+	file_t*	a = NULL;
+	file_t*	b = *list;
+	while (1)
+	{
+		if (compare(el, b, options))
+		{
+			if(a)
+				a->next = el;
+			else
+				*list = el;
+			el->next = b;
+			return ;
+		}
+		a = b;
+		b = b->next;
+	}
 }
 
 
