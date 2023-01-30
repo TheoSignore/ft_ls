@@ -160,32 +160,65 @@ static int	ft_strcmp(char* str1, char* str2)
 	return (*str1 - *str2);
 }
 
-int	compare_value(size_t a, size_t b, int way)
+//static int	strlowercmp(char* str1, char* str2)
+//{
+//	char	a = 0;
+//	char	b = 0;
+//	while (*str1 && *str2)
+//	{
+//		a = (*str1 >= 'A' && *str1 <= 'Z' ? *str1 + 32 : *str1);
+//		b = (*str2 >= 'A' && *str2 <= 'Z' ? *str2 + 32 : *str2);
+//		if (a != b)
+//			return (a - b);
+//		str1++;
+//		str2++;
+//	}
+//	a = (*str1 >= 'A' && *str1 <= 'Z' ? *str1 + 32 : *str1);
+//	b = (*str2 >= 'A' && *str2 <= 'Z' ? *str2 + 32 : *str2);
+//	return (a - b);
+//}
+
+int	compare_name(char* a, char* b, int way)
 {
 	if (way)
-		return (a - b);
-	return (b - a);
+		return (ft_strcmp(b, a));
+	return (ft_strcmp(a, b));
 }
 
+int	compare_time(time_t a, time_t b, int way)
+{
+	if (way)
+	{
+		if (b < a)
+			return (1);
+		return (-1);
+	}
+	if (b >= a)
+		return (1);
+	return (-1);
+}
 
 static char	compare(file_t* a, file_t* b, char options) // <
 {
+	if (!b)
+		return (1);
+	int	diff;
 	if (options & SORT_MTIME)
 	{
 		if (a->stats.st_nlink == 0)
 			lstat(a->path, &(a->stats));
 		if (b->stats.st_nlink == 0)
 			lstat(b->path, &(b->stats));
-		int	diff = compare_value(a->stats.mtime, b->stats.mtime, options & REVERSE)
-		if (diff >=
+		diff = compare_time(a->stats.st_mtime, b->stats.st_mtime, options & REVERSE);
 	}
 	else
-	{
-		
-	}
+		diff = compare_name(a->name, b->name, options & REVERSE);
+	if (diff < 0)
+		return (1);
+	return (0);
 }
 
-static void	add_back_file(file_t** list, file_t* el, char options)
+static void	insert_file(file_t** list, file_t* el, char options)
 {
 	file_t*	a = NULL;
 	file_t*	b = *list;
@@ -275,7 +308,7 @@ static void	get_content(file_t* dir, char options)
 			//	if (options & RECURSIVE)
 			//	{
 			//	}
-			add_back_file(&(dir->content), file);
+			insert_file(&(dir->content), file, options);
 		}
 		errno = 0;
 		subfile = readdir(dir_stream);
@@ -283,6 +316,19 @@ static void	get_content(file_t* dir, char options)
 	closedir(dir_stream);
 	if (errno != 0)
 		free_file(dir->content);
+}
+
+void	add_back_dir(file_t** lst, file_t* el)
+{
+	if (!(*lst))
+	{
+		*lst = el;
+		return ;
+	}
+	file_t*	tmp = *lst;
+	while (tmp->next)
+		tmp = tmp->next;
+	tmp->next = el;
 }
 
 file_t*	get_dirs(int ac, char** av, char options)
@@ -305,7 +351,7 @@ file_t*	get_dirs(int ac, char** av, char options)
 		{
 			get_content(file, options);
 		}
-		add_back_file(&res, file);
+		add_back_dir(&res, file);
 	}
 	return (res);
 }
@@ -318,7 +364,7 @@ static void	display_list(file_t* file, char options)
 		if (file->content)
 			printf("%s:\n", file->path);
 		else
-			printf("%s ", file->name);
+			printf("%s  ", file->name);
 		if (file->content)
 		{
 			display_list(file->content, options);
