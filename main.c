@@ -126,7 +126,6 @@ static file_t*	create_new_file(char* file_path)
 	return res;
 }
 
-
 static void	access_error(char* path)
 {
 	char*	error_prefix = "ft_ls: cannot access '";
@@ -285,37 +284,30 @@ static char*	join_path(char* str1, char* str2)
 	return (res);
 }
 
-static void	get_content(file_t* dir, char options)
+void	ft_memcpy(void* dst, void* src, size_t sz)
 {
-	DIR*	dir_stream = opendir(dir->path);
-	if (!dir_stream)
+	char*	src_dst = dst;
+	char*	src_src = src;
+
+	for (size_t i = 0 ; i < sz ; i++)
+		src_dst[i] = src_src[i];
+}
+
+static file_t*	dup_dir(file_t* dir)
+{
+	file_t*	res = malloc(sizeof(file_t));
+	if (res)
 	{
-		return ;
+		res->path = ft_strdup(dir->path);
+		res->name = res->path + (dir->name - dir->path);
+		ft_memcpy(&(res->stats), &(dir->stats), sizeof(struct stat));
+		res->content = NULL;
+		res->info = NULL;
+		res->next = NULL;
 	}
-	errno = 0;
-	struct dirent*	subfile = readdir(dir_stream);
-	while (subfile)
-	{
-		if (!(subfile->d_name[0] == '.' && !(options & ALL)))
-		{
-			char*	subfile_path = join_path(dir->path, subfile->d_name);
-			file_t*	file = create_new_file(subfile_path);
-			free(subfile_path);
-			if (!file)
-			{
-				break ;
-			}
-			//	if (options & RECURSIVE)
-			//	{
-			//	}
-			insert_file(&(dir->content), file, options);
-		}
-		errno = 0;
-		subfile = readdir(dir_stream);
-	}
-	closedir(dir_stream);
-	if (errno != 0)
-		free_file(dir->content);
+	else
+		perror("ft_ls:");
+	return res;
 }
 
 void	add_back_dir(file_t** lst, file_t* el)
@@ -329,31 +321,6 @@ void	add_back_dir(file_t** lst, file_t* el)
 	while (tmp->next)
 		tmp = tmp->next;
 	tmp->next = el;
-}
-
-file_t*	get_dirs(int ac, char** av, char options)
-{
-	(void)options;
-	file_t*	res = NULL;
-
-	for (int i = 0; i < ac ; i++)
-	{
-		file_t*	file = create_new_file(av[i]);
-		if (!file)
-			free_file_chain(res);
-		if (stat(file->path, &(file->stats)))
-		{
-			access_error(file->path);
-			free_file(file);
-			continue ;
-		}
-		if (S_ISDIR(file->stats.st_mode))
-		{
-			get_content(file, options);
-		}
-		add_back_dir(&res, file);
-	}
-	return (res);
 }
 
 static void	display_list(file_t* file, char options)
@@ -373,6 +340,77 @@ static void	display_list(file_t* file, char options)
 		display_list(file->next, options);
 	}
 }
+
+static void	get_content(file_t** dir_chain, file_t* dir, char options)
+{
+	DIR*	dir_stream = opendir(dir->path);
+	if (!dir_stream)
+	{
+		return ;
+	}
+	errno = 0;
+	struct dirent*	subfile = readdir(dir_stream);
+	while (subfile)
+	{
+		if (!(subfile->d_name[0] == '.' && !(options & ALL)))
+		{
+			char*	subfile_path = join_path(dir->path, subfile->d_name);
+			file_t*	file = create_new_file(subfile_path);
+			free(subfile_path);
+			if (!file)
+			{
+				break ;
+			}
+			insert_file(&(dir->content), file, options);
+			if (options & RECURSIVE)
+			{
+				if (lstat(file->path, &(file->stats)))
+					access_error(file->path);
+				else if (S_ISDIR(file->stats.st_mode) && file->path[0])
+				{
+					file_t*	new_dir = dup_dir(file);
+					if (new_dir)
+					{
+						add_back_dir(dir_chain, new_dir);
+						get_content(dir_chain, new_dir, options);
+					}
+				}
+			}
+		}
+		errno = 0;
+		subfile = readdir(dir_stream);
+	}
+	closedir(dir_stream);
+	if (errno != 0)
+		free_file(dir->content);
+}
+
+
+file_t*	get_dirs(int ac, char** av, char options)
+{
+	(void)options;
+	file_t*	res = NULL;
+
+	for (int i = 0; i < ac ; i++)
+	{
+		file_t*	file = create_new_file(av[i]);
+		if (!file)
+			free_file_chain(res);
+		add_back_dir(&res, file);
+		if (stat(file->path, &(file->stats)))
+		{
+			access_error(file->path);
+			free_file(file);
+			continue ;
+		}
+		if (S_ISDIR(file->stats.st_mode))
+		{
+			get_content(&res, file, options);
+		}
+	}
+	return (res);
+}
+
 
 int	main(int ac, char** av)
 {
