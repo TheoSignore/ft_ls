@@ -159,24 +159,6 @@ static int	ft_strcmp(char* str1, char* str2)
 	return (*str1 - *str2);
 }
 
-//static int	strlowercmp(char* str1, char* str2)
-//{
-//	char	a = 0;
-//	char	b = 0;
-//	while (*str1 && *str2)
-//	{
-//		a = (*str1 >= 'A' && *str1 <= 'Z' ? *str1 + 32 : *str1);
-//		b = (*str2 >= 'A' && *str2 <= 'Z' ? *str2 + 32 : *str2);
-//		if (a != b)
-//			return (a - b);
-//		str1++;
-//		str2++;
-//	}
-//	a = (*str1 >= 'A' && *str1 <= 'Z' ? *str1 + 32 : *str1);
-//	b = (*str2 >= 'A' && *str2 <= 'Z' ? *str2 + 32 : *str2);
-//	return (a - b);
-//}
-
 int	compare_name(char* a, char* b, int way)
 {
 	if (way)
@@ -237,26 +219,6 @@ static void	insert_file(file_t** list, file_t* el, char options)
 	}
 }
 
-
-static void	free_file(file_t* fp)
-{
-	if (fp)
-	{
-		free(fp->path);
-		free_file(fp->content);
-		free(fp->info);
-	}
-}
-
-static void	free_file_chain(file_t* fpc)
-{
-	if (!fpc)
-		return ;
-	file_t*	tmp = fpc->next;
-	free_file(fpc);
-	free_file_chain(tmp);
-}
-
 static char*	join_path(char* str1, char* str2)
 {
 	size_t	len1 = ft_strlen(str1);
@@ -293,55 +255,53 @@ void	ft_memcpy(void* dst, void* src, size_t sz)
 		src_dst[i] = src_src[i];
 }
 
-static file_t*	dup_dir(file_t* dir)
+static void	free_file_chain(file_t* fpc);
+
+static void	free_file(file_t* fp)
 {
-	file_t*	res = malloc(sizeof(file_t));
-	if (res)
+	if (fp)
 	{
-		res->path = ft_strdup(dir->path);
-		res->name = res->path + (dir->name - dir->path);
-		ft_memcpy(&(res->stats), &(dir->stats), sizeof(struct stat));
-		res->content = NULL;
-		res->info = NULL;
-		res->next = NULL;
+		free(fp->path);
+		free_file_chain(fp->content);
+		free(fp->info);
+		free(fp);
 	}
-	else
-		perror("ft_ls:");
-	return res;
 }
 
-void	add_back_dir(file_t** lst, file_t* el)
+static void	free_file_chain(file_t* fpc)
 {
-	if (!(*lst))
-	{
-		*lst = el;
+	if (!fpc)
 		return ;
-	}
-	file_t*	tmp = *lst;
-	while (tmp->next)
-		tmp = tmp->next;
-	tmp->next = el;
+	file_t*	tmp = fpc->next;
+	free_file(fpc);
+	free_file_chain(tmp);
 }
 
-static void	display_list(file_t* file, char options)
+static void	display_dir(file_t* file, char options)
 {
 	(void)options;
 	if (file)
 	{
 		if (file->content)
+		{
 			printf("%s:\n", file->path);
 		else
-			printf("%s  ", file->name);
+			printf("%s\n", file->name);
 		if (file->content)
 		{
-			display_list(file->content, options);
-			printf("\n\n");
+			file_t*	tmp = file->content;
+			while (tmp)
+			{
+				printf("%s  ", tmp->name);
+				tmp = tmp->next;
+			}
+			printf("\n");
 		}
-		display_list(file->next, options);
+		printf("\n");
 	}
 }
 
-static void	get_content(file_t** dir_chain, file_t* dir, char options)
+static void	get_content(file_t* dir, char options)
 {
 	DIR*	dir_stream = opendir(dir->path);
 	if (!dir_stream)
@@ -362,20 +322,6 @@ static void	get_content(file_t** dir_chain, file_t* dir, char options)
 				break ;
 			}
 			insert_file(&(dir->content), file, options);
-			if (options & RECURSIVE)
-			{
-				if (lstat(file->path, &(file->stats)))
-					access_error(file->path);
-				else if (S_ISDIR(file->stats.st_mode) && file->path[0])
-				{
-					file_t*	new_dir = dup_dir(file);
-					if (new_dir)
-					{
-						add_back_dir(dir_chain, new_dir);
-						get_content(dir_chain, new_dir, options);
-					}
-				}
-			}
 		}
 		errno = 0;
 		subfile = readdir(dir_stream);
@@ -385,32 +331,53 @@ static void	get_content(file_t** dir_chain, file_t* dir, char options)
 		free_file(dir->content);
 }
 
-
-file_t*	get_dirs(int ac, char** av, char options)
+file_t*	get_dirs(int ac, char** av, char options, char flag)
 {
 	(void)options;
-	file_t*	res = NULL;
 
 	for (int i = 0; i < ac ; i++)
 	{
 		file_t*	file = create_new_file(av[i]);
 		if (!file)
-			free_file_chain(res);
-		add_back_dir(&res, file);
-		if (stat(file->path, &(file->stats)))
-		{
-			access_error(file->path);
-			free_file(file);
 			continue ;
-		}
-		if (S_ISDIR(file->stats.st_mode))
+		if (flag)
 		{
-			get_content(&res, file, options);
+			if (stat(file->path, &(file->stats)))
+			{
+				access_error(file->path);
+				free_file(file);
+				continue ;
+			}
 		}
+		else
+		{
+			if (lstat(file->path, &(file->stats)))
+			{
+				access_error(file->path);
+				free_file(file);
+				continue ;
+			}
+		}
+		if (S_ISDIR(file->stats.st_mode) && (flag || (!flag && !(file->name[0] == '.' && (!file->name[1] || (file->name[1] == '.' && !file->name[2]))))))
+		{
+			get_content(file, options);
+			display_dir(file, options);
+			if (options & RECURSIVE)
+			{
+				file_t*	tmp = file->content;
+				while (tmp)
+				{
+					get_dirs(1, &(tmp->path), options, 0);
+					tmp = tmp->next;
+				}
+			}
+		}
+		else if (flag)
+			display_dir(file, options);
+		free_file(file);
 	}
-	return (res);
+	return (NULL);
 }
-
 
 int	main(int ac, char** av)
 {
@@ -449,14 +416,9 @@ int	main(int ac, char** av)
 	}
 
 
-	file_t*	list = get_dirs(ac, av, options); // handles the -a
+	get_dirs(ac, av, options, 1);
 	
 	
-	//if (options & RECURSIVE)
-	//	expand_dirs(list, options & ALL); // handles -R and -a in subdirectories
-	//sort_listing(&list, (options & REVERSE), (options & SORT_MTIME)); // handles default sorting, -r and -t
-	display_list(list, options); // handles -l
-	free_file_chain(list);
 	return (0);
 }
 //11 + 1 + max_len(number_of_hard_links) + 1 + max_len(uname) + 1 + max_len(gname) + 1 + max_len(size) + 1 + 12 + 1 + max_len(file_name);
