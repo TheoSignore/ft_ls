@@ -70,4 +70,7 @@ void	ft_memcpy(void* dst, void* src, size_t sz);
 file_t*	create_new_file(char* file_path);
 void	free_file(file_t* fp);
 void	get_content(file_t* dir, char options);
+
+/* time_stuff.c */
+void	extract_and_format_time(time_t mtim, char* str_mtim);
 #endif

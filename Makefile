@@ -1,7 +1,8 @@
 SRCS	:=	main.c \
 			parsing.c \
 			str_utils.c \
-			file_and_dir.c
+			file_and_dir.c \
+			time_stuff.c
 
 OBJS	=	${SRCS:.c=.o}
 

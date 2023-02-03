@@ -1,3 +1,4 @@
+#include "ft_ls.h"
 #include "time_stuff.h"
 
 static int	year_atoi(char* year)
