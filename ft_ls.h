@@ -7,6 +7,7 @@
 # define REVERSE 8
 # define SORT_MTIME 16
 # define UNKNOWN 128
+# define BUFFER_SIZE 80
 
 # include <stdlib.h>
 # include <unistd.h>
@@ -17,6 +18,7 @@
 # include <pwd.h>
 # include <grp.h>
 # include <sys/types.h>
+# include <stdio.h>
 
 typedef struct s_lens
 {
@@ -53,4 +55,19 @@ typedef struct s_file
 	struct s_file*	next;
 }	file_t;
 
+/* parsing.h */
+int		remove_options_and_name(int ac, char** av);
+char	get_options(int ac, char** av);
+
+/* str_utils.c */
+size_t	ft_strlen(const char* str);
+char*	ft_strdup(const char* str);
+int		ft_strcmp(char* str1, char* str2);
+char*	join_path(char* str1, char* str2);
+void	ft_memcpy(void* dst, void* src, size_t sz);
+
+/* file_and_dir.c */
+file_t*	create_new_file(char* file_path);
+void	free_file(file_t* fp);
+void	get_content(file_t* dir, char options);
 #endif

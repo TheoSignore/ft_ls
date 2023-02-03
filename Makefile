@@ -1,4 +1,7 @@
-SRCS	:=	main.c
+SRCS	:=	main.c \
+			parsing.c \
+			str_utils.c \
+			file_and_dir.c
 
 OBJS	=	${SRCS:.c=.o}
 

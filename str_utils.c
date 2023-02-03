@@ -1,38 +1,13 @@
-#include "str_utils.h"
-//test
-size_t	ft_strlen(char const *s)
-{
-	size_t	size = 0;
-	if (s)
-	{
-		while (s[size])
-			size++;
-	}
-	return (size);
-}
+#include "ft_ls.h"
 
-const char	*ft_strchr(const char *s, char c)
+size_t	ft_strlen(const char* str)
 {
-	if (!s)
-		return ( NULL );
-	size_t	i = 0;
-	while (s[i] != c && s[i] != '\0')
-		i++;
-	return (s[i] == c ? &(s[i]) : NULL );
-}
+	size_t	res = 0;
 
-char	ft_strncmp(const char *s1, const char *s2, size_t n)
-{
-	size_t	lens1 = ft_strlen(s1) + 1;
-	size_t	lens2 = ft_strlen(s2) + 1;
-	size_t	i = 0;
-	while(i < n && i < lens1 && i < lens2)
-	{
-		if (s1[i] != s2[i])
-			return (0);
-		i++;
-	}
-	return (i >= n ? 1 : 0);
+	if (str)
+		while (str[res])
+			res++;
+	return (res);
 }
 
 char*	ft_strdup(const char* str)
@@ -50,45 +25,50 @@ char*	ft_strdup(const char* str)
 	return (res);
 }
 
-char*	ft_itoa(int n)
+int	ft_strcmp(char* str1, char* str2)
 {
-	size_t	sbuf = 10;
-	char	buffer[12];
-
-	for (int i = 0 ; i < 12 ; i++)
-		buffer[i] = '\0';
-
-	char	sign = n < 0 ? 0 : 1;
-	long int	li = n < 0 ? -n : n;
-	while (li > 0)
+	while (*str1 && *str2)
 	{
-		buffer[sbuf] = (li % 10) + '0';
-		li /= 10;
-		sbuf--;
+		if (*str1 != *str2)
+			break;
+		str1++;
+		str2++;
 	}
-	if (!sign)
-		buffer[sbuf] = '-';
-	else
-		sbuf++;
-	return (ft_strdup(&(buffer[sbuf])));
+	return (*str1 - *str2);
 }
 
-void	ft_memcpy(void* ptr1, void* ptr2, size_t n)
+char*	join_path(char* str1, char* str2)
 {
-	char*	sptr1 = ptr1;
-	char*	sptr2 = ptr2;
-
-	for (size_t i = 0 ; i < n ; i++)
-		sptr2[i] = sptr1[i];
-}
-
-size_t	non_null_term_strcpy(char* src, char* dst)
-{
-	size_t	res = 0;
-	while (src[res])
+	size_t	len1 = ft_strlen(str1);
+	size_t	len2 = ft_strlen(str2);
+	size_t	len_res = len1 + len2 + (str1[len1 - 1] == '/' ? 1 : 2);
+	char*	res = malloc(len_res);
+	if (!res)
+		return (NULL);
+	for (size_t i = 0 ; i < len1 ; i++)
 	{
-		dst[res] = src[res];
+		*res = str1[i];
 		res++;
 	}
+	if (str1[len1 - 1] != '/')
+	{
+		*res = '/';
+		res++;
+	}
+	for (size_t i = 0 ; i <= len2 ; i++)
+	{
+		*res = str2[i];
+		res++;
+	}
+	res -= len_res;
 	return (res);
+}
+
+void	ft_memcpy(void* dst, void* src, size_t sz)
+{
+	char*	src_dst = dst;
+	char*	src_src = src;
+
+	for (size_t i = 0 ; i < sz ; i++)
+		src_dst[i] = src_src[i];
 }

@@ -22,109 +22,6 @@ void	print_bits(char c)
 	printf("%s\n", buffer);
 }
 
-int	remove_options_and_name(int ac, char** av)
-{
-	int	index = 0;
-
-	for (int i = 1 ; i < ac ; i++)
-	{
-		if (av[i][0] != '-')
-		{
-			av[index] = av[i];
-			index++;
-		}
-	}
-	av[index] = NULL;
-	return (index);
-}
-
-char	get_options(int ac, char** av)
-{
-	char	res = 0;
-	char*	options = "lRart";
-	char	option_mask[5] = { LONG_LISTING, RECURSIVE, ALL, REVERSE, SORT_MTIME };
-
-	for (int i = 0 ; i < ac ; i++)
-	{
-		if (av[i][0] == '-')
-		{
-			char*	tmp = &(av[i][1]);
-			while (*tmp)
-			{
-				char	b = 0;
-				for (int opt_i = 0 ; opt_i < 5 ; opt_i++)
-				{
-					if (options[opt_i] == *tmp)
-					{
-						res = res | option_mask[opt_i];
-						b = 1;
-						break;
-					}
-				}
-				if (!b)
-				{
-					res = *tmp | UNKNOWN;
-					return (res);
-				}
-				tmp++;
-			}
-		}
-	}
-	return (res);
-}
-
-size_t	ft_strlen(const char* str)
-{
-	size_t	res = 0;
-
-	if (str)
-		while (str[res])
-			res++;
-	return (res);
-}
-
-char*	ft_strdup(const char* str)
-{
-	if (!str)
-		return (NULL);
-	size_t	str_len = ft_strlen(str);
-	char*	res = malloc(str_len + 1);
-	if (res)
-	{
-		for (size_t i = 0 ; i < str_len ; i++)
-			res[i] = str[i];
-		res[str_len] = '\0';
-	}
-	return (res);
-}
-
-static file_t*	create_new_file(char* file_path)
-{
-	file_t*	res = malloc(sizeof(file_t));
-	if (res)
-	{
-		res->path = ft_strdup(file_path);
-		size_t	i = 0;
-		while (res->path[i])
-			i++;
-		i--;
-		if (res->path[i] == '/')
-			i--;
-		while (i > 0 && res->path[i] != '/')
-			i--;
-		if (i)
-			i++;
-		res->name = &(res->path[i]);
-
-		res->stats.st_nlink = 0;
-		res->content = NULL;
-		res->info = NULL;
-		res->next = NULL;
-	}
-	else
-		perror("ft_ls:");
-	return res;
-}
 
 static void	access_error(char* path)
 {
@@ -147,194 +44,78 @@ static void	access_error(char* path)
 	perror(buffer);
 }
 
-static int	ft_strcmp(char* str1, char* str2)
-{
-	while (*str1 && *str2)
-	{
-		if (*str1 != *str2)
-			break;
-		str1++;
-		str2++;
-	}
-	return (*str1 - *str2);
-}
 
-int	compare_name(char* a, char* b, int way)
-{
-	if (way)
-		return (ft_strcmp(b, a));
-	return (ft_strcmp(a, b));
-}
 
-int	compare_time(time_t a, time_t b, int way)
+static void	print_content(file_t* files)
 {
-	if (way)
+	size_t	buffer_len = 0;
+	file_t*	tmp = files;
+	while (tmp)
 	{
-		if (b < a)
-			return (1);
-		return (-1);
-	}
-	if (b >= a)
-		return (1);
-	return (-1);
-}
-
-static char	compare(file_t* a, file_t* b, char options) // <
-{
-	if (!b)
-		return (1);
-	int	diff;
-	if (options & SORT_MTIME)
-	{
-		if (a->stats.st_nlink == 0)
-			lstat(a->path, &(a->stats));
-		if (b->stats.st_nlink == 0)
-			lstat(b->path, &(b->stats));
-		diff = compare_time(a->stats.st_mtime, b->stats.st_mtime, options & REVERSE);
-	}
-	else
-		diff = compare_name(a->name, b->name, options & REVERSE);
-	if (diff < 0)
-		return (1);
-	return (0);
-}
-
-static void	insert_file(file_t** list, file_t* el, char options)
-{
-	file_t*	a = NULL;
-	file_t*	b = *list;
-	while (1)
-	{
-		if (compare(el, b, options))
+		buffer_len += ft_strlen(tmp->name) + (buffer_len ? 2 : 0);
+		tmp = tmp->next;
+		if (buffer_len >= BUFFER_SIZE || !tmp)
 		{
-			if(a)
-				a->next = el;
-			else
-				*list = el;
-			el->next = b;
-			return ;
+			buffer_len++;
+			char	buffer[buffer_len];
+			size_t	i = 0;
+			size_t	len = 0;
+			while (files != tmp)
+			{
+				len = ft_strlen(files->name);
+				ft_memcpy(&buffer[i], files->name, len);
+				i += len;
+				buffer[i++] = ' ';
+				buffer[i++] = ' ';
+				files = files->next;
+			}
+			buffer[buffer_len - 1] = '\n';
+			write(1, buffer, buffer_len);
+			buffer_len = 0;
 		}
-		a = b;
-		b = b->next;
 	}
 }
 
-static char*	join_path(char* str1, char* str2)
+static void	display_dir(file_t* file, char long_listing, int flag)
 {
-	size_t	len1 = ft_strlen(str1);
-	size_t	len2 = ft_strlen(str2);
-	size_t	len_res = len1 + len2 + (str1[len1 - 1] == '/' ? 1 : 2);
-	char*	res = malloc(len_res);
-	if (!res)
-		return (NULL);
-	for (size_t i = 0 ; i < len1 ; i++)
-	{
-		*res = str1[i];
-		res++;
-	}
-	if (str1[len1 - 1] != '/')
-	{
-		*res = '/';
-		res++;
-	}
-	for (size_t i = 0 ; i <= len2 ; i++)
-	{
-		*res = str2[i];
-		res++;
-	}
-	res -= len_res;
-	return (res);
-}
-
-void	ft_memcpy(void* dst, void* src, size_t sz)
-{
-	char*	src_dst = dst;
-	char*	src_src = src;
-
-	for (size_t i = 0 ; i < sz ; i++)
-		src_dst[i] = src_src[i];
-}
-
-static void	free_file_chain(file_t* fpc);
-
-static void	free_file(file_t* fp)
-{
-	if (fp)
-	{
-		free(fp->path);
-		free_file_chain(fp->content);
-		free(fp->info);
-		free(fp);
-	}
-}
-
-static void	free_file_chain(file_t* fpc)
-{
-	if (!fpc)
-		return ;
-	file_t*	tmp = fpc->next;
-	free_file(fpc);
-	free_file_chain(tmp);
-}
-
-static void	display_dir(file_t* file, char options)
-{
-	(void)options;
+	(void)long_listing;
 	if (file)
 	{
 		if (file->content)
 		{
-			printf("%s:\n", file->path);
-		else
-			printf("%s\n", file->name);
-		if (file->content)
-		{
-			file_t*	tmp = file->content;
-			while (tmp)
+			if (flag != 1)
 			{
-				printf("%s  ", tmp->name);
-				tmp = tmp->next;
+				size_t	len = ft_strlen(file->path);
+				char	buffer[len + 2];
+				buffer[len] = ':';
+				buffer[len + 1] = '\n';
+				ft_memcpy(buffer, file->path, len);
+				write(1, buffer, len + 2);
 			}
-			printf("\n");
+			if (!long_listing)
+				print_content(file->content);
+//			else
+//				print_lldir(file);
 		}
-		printf("\n");
+		else
+		{
+			if (!long_listing)
+			{
+				size_t	len = ft_strlen(file->name);
+				char	buffer[len + 1];
+				buffer[len] = '\n';
+				ft_memcpy(buffer, file->name, len);
+				write(1, buffer, len + 1);
+			}
+//			else
+//				print_llfile(file);
+		}
 	}
 }
 
-static void	get_content(file_t* dir, char options)
-{
-	DIR*	dir_stream = opendir(dir->path);
-	if (!dir_stream)
-	{
-		return ;
-	}
-	errno = 0;
-	struct dirent*	subfile = readdir(dir_stream);
-	while (subfile)
-	{
-		if (!(subfile->d_name[0] == '.' && !(options & ALL)))
-		{
-			char*	subfile_path = join_path(dir->path, subfile->d_name);
-			file_t*	file = create_new_file(subfile_path);
-			free(subfile_path);
-			if (!file)
-			{
-				break ;
-			}
-			insert_file(&(dir->content), file, options);
-		}
-		errno = 0;
-		subfile = readdir(dir_stream);
-	}
-	closedir(dir_stream);
-	if (errno != 0)
-		free_file(dir->content);
-}
 
 file_t*	get_dirs(int ac, char** av, char options, char flag)
 {
-	(void)options;
-
 	for (int i = 0; i < ac ; i++)
 	{
 		file_t*	file = create_new_file(av[i]);
@@ -361,7 +142,9 @@ file_t*	get_dirs(int ac, char** av, char options, char flag)
 		if (S_ISDIR(file->stats.st_mode) && (flag || (!flag && !(file->name[0] == '.' && (!file->name[1] || (file->name[1] == '.' && !file->name[2]))))))
 		{
 			get_content(file, options);
-			display_dir(file, options);
+			display_dir(file, options & LONG_LISTING, ac);
+			if (i != (ac - 1))
+				write(1, "\n", 1);
 			if (options & RECURSIVE)
 			{
 				file_t*	tmp = file->content;
@@ -373,7 +156,11 @@ file_t*	get_dirs(int ac, char** av, char options, char flag)
 			}
 		}
 		else if (flag)
-			display_dir(file, options);
+		{
+			display_dir(file, options & LONG_LISTING, ac);
+			if (i != (ac - 1))
+				write(1, "\n", 1);
+		}
 		free_file(file);
 	}
 	return (NULL);
@@ -390,30 +177,16 @@ int	main(int ac, char** av)
 		write(2, buffer, 72);
 		return (1);
 	}
-	else
-		write(1, (options ? "Options used: -" : "No option used."), 15);
-	if (options & LONG_LISTING)
-		write(1, "l", 1);
-	if (options & RECURSIVE)
-		write(1, "R", 1);
-	if (options & ALL)
-		write(1, "a", 1);
-	if (options & REVERSE)
-		write(1, "r", 1);
-	if (options & SORT_MTIME)
-		write(1, "t", 1);
-	write(1, "\n", 1);
-
 	ac = remove_options_and_name(ac, av);
 	char*	default_path = "."; // string literals are read-only
 	if (!ac)
 		av[ac++] = default_path;
 
-	printf ("%i\n", ac);
-	for (int i = 0 ; i < ac ; i++)
-	{
-		printf("[%i]\t\"%s\"\n", i, av[i]);
-	}
+	//printf ("%i\n", ac);
+	//for (int i = 0 ; i < ac ; i++)
+	//{
+	//	printf("[%i]\t\"%s\"\n", i, av[i]);
+	//}
 
 
 	get_dirs(ac, av, options, 1);
