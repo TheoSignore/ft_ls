@@ -22,7 +22,6 @@ void	print_bits(char c)
 	printf("%s\n", buffer);
 }
 
-
 static void	access_error(char* path)
 {
 	char*	error_prefix = "ft_ls: cannot access '";
@@ -43,8 +42,6 @@ static void	access_error(char* path)
 	buffer[i] = '\0';
 	perror(buffer);
 }
-
-
 
 static void	print_content(file_t* files)
 {
@@ -83,145 +80,43 @@ static void	print_content(file_t* files)
 //	print content
 //}
 
-static char	get_type(mode_t mode)
-{
-	switch (mode & S_IFMT)
-	{
-		case S_IFREG:
-			return '-';
-		case S_IFDIR:
-			return 'd';
-		case S_IFLNK:
-			return 'l';
-		case S_IFSOCK:
-			return 's';
-		case S_IFBLK:
-			return 'b';
-		case S_IFCHR:
-			return 'c';
-		case S_IFIFO:
-			return 'p';
-		default:
-			return '?';
-	}
-}
-
-static void	get_perms(mode_t mode, char* buf)
-{
-	buf[0] = (mode & S_IRUSR) ? 'r' : '-';
-	buf[1] = (mode & S_IWUSR) ? 'w' : '-';
-	buf[2] = (mode & S_IXUSR) ? 'x' : '-';
-	buf[3] = (mode & S_IRGRP) ? 'r' : '-';
-	buf[4] = (mode & S_IWGRP) ? 'w' : '-';
-	buf[5] = (mode & S_IXGRP) ? 'x' : '-';
-	buf[6] = (mode & S_IROTH) ? 'r' : '-';
-	buf[7] = (mode & S_IWOTH) ? 'w' : '-';
-	buf[8] = (mode & S_IXOTH) ? 'x' : '-';
-}
-
-static char*	get_link_target(char* path)
-{
-	size_t	sbuf = 16;
-	size_t	target_len = 16;
-	while (1)
-	{
-		char	buffer[sbuf];
-		target_len = readlink(path, buffer, sbuf);
-		if (target_len == (size_t)(-1))
-			return (NULL);
-		else if (target_len < sbuf)
-		{
-			buffer[target_len] = '\0';
-			return (ft_strdup(buffer));
-		}
-		sbuf *= 2;
-	}
-	return (NULL);
-}
-
-char*	ft_itoa(int n)
-{
-	size_t	sbuf = 10;
-	char	buffer[12];
-
-	for (int i = 0 ; i < 12 ; i++)
-		buffer[i] = '\0';
-
-	char	sign = n < 0 ? 0 : 1;
-	long int	li = n < 0 ? -n : n;
-	while (li > 0)
-	{
-		buffer[sbuf] = (li % 10) + '0';
-		li /= 10;
-		sbuf--;
-	}
-	if (!sign)
-		buffer[sbuf] = '-';
-	else
-		sbuf++;
-	return (ft_strdup(&(buffer[sbuf])));
-}
-
-static char*	get_owner(int uid)
-{
-	struct passwd*	spwd = getpwuid(uid);
-	if (spwd)
-		return (ft_strdup(spwd->pw_name));
-	return (ft_itoa(uid));
-}
-
-static char*	get_group(int gid)
-{
-	struct group*	grp = getgrgid(gid);
-	if (grp)
-		return (ft_strdup(grp->gr_name));
-	return (ft_itoa(gid));
-}
-
-static void	load_file_info(file_t* file)
-{
-	if (file->stats.st_nlink == 0)
-	{
-		if (lstat(file->path, &(file->stats)))
-			return;
-	}
-	fileinfo_t*	info = malloc(sizeof(fileinfo_t));
-	if (!info)
-		return ;
-	info->file_type = get_type(file->stats.st_mode);
-	get_perms(file->stats.st_mode, info->perms);
-	info->number_of_links = file->stats.st_nlink;
-	info->owner_name = get_owner(file->stats.st_uid);
-	info->group_name = get_group(file->stats.st_gid);
-	info->minor = ft_itoa(minor(file->stats.st_dev));
-	info->major = ft_itoa(major(file->stats.st_dev));
-	info->size = ft_itoa(file->stats.st_size);
-	info->blksize = ft_itoa(file->stats.st_blksize);
-	extract_and_format_time(file->stats.st_mtime, info->mtime);
-	if (info->file_type == 'l')
-		info->target = get_link_target(file->path);
-	else
-		info->target = NULL;
-	file->info = info;
-}
-
-
 static void	print_llfile(file_t* file, lens_t* lens)
 {
 	(void)lens;
 	if (!file->info)
 		load_file_info(file);
-	printf("%c%s %zu %s %s %s %s %s %s %s\n",
-			file->info->file_type,
-			file->info->perms,
-			file->info->number_of_links,
-			file->info->owner_name,
-			file->info->group_name,
-			file->info->minor,
-			file->info->major,
-			file->info->size,
-			file->info->blksize,
-			file->info->mtime);
+	if (file->info->file_type == 'c' || file->info->file_type == 'b')
+		printf("%c%s %s %s %s %s, %s %s %s\n",
+				file->info->file_type,
+				file->info->perms,
+				file->info->number_of_links,
+				file->info->owner_name,
+				file->info->group_name,
+				file->info->major,
+				file->info->minor,
+				file->info->mtime,
+				file->name);
+	else if (file->info->file_type == 'l')
+		printf("%c%s %s %s %s %s %s %s -> %s\n",
+				file->info->file_type,
+				file->info->perms,
+				file->info->number_of_links,
+				file->info->owner_name,
+				file->info->group_name,
+				file->info->size,
+				file->info->mtime,
+				file->name,
+				file->info->target);
+	else
+		printf("%c%s %s %s %s %s %s %s\n",
+				file->info->file_type,
+				file->info->perms,
+				file->info->number_of_links,
+				file->info->owner_name,
+				file->info->group_name,
+				file->info->size,
+				file->info->mtime,
+				file->name);
 }
 
 static void	display_dir(file_t* file, char long_listing, int flag)
@@ -269,7 +164,7 @@ file_t*	get_dirs(int ac, char** av, char options, char flag)
 		file_t*	file = create_new_file(av[i]);
 		if (!file)
 			continue ;
-		if (flag)
+		if (flag && !(options & LONG_LISTING))
 		{
 			if (stat(file->path, &(file->stats)))
 			{
@@ -336,10 +231,8 @@ int	main(int ac, char** av)
 	//	printf("[%i]\t\"%s\"\n", i, av[i]);
 	//}
 
-
 	get_dirs(ac, av, options, 1);
-	
-	
+
 	return (0);
 }
 //11 + 1 + max_len(number_of_hard_links) + 1 + max_len(uname) + 1 + max_len(gname) + 1 + max_len(size) + 1 + 12 + 1 + max_len(file_name);

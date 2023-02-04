@@ -32,7 +32,7 @@ typedef struct s_fileinfo
 {
 	char	file_type;
 	char	perms[9];
-	size_t	number_of_links; //zi
+	char*	number_of_links; //zi
 	char*	owner_name;
 	char*	group_name;
 	char*	minor; //ui
@@ -73,4 +73,14 @@ void	get_content(file_t* dir, char options);
 
 /* time_stuff.c */
 void	extract_and_format_time(time_t mtim, char* str_mtim);
+
+/* info.c */
+void	load_file_info(file_t* file);
+
+/* ntoa.c */
+char*	ft_litoa(long int n);
+char*	ft_luitoa(long unsigned int n);
+char*	ft_uitoa(unsigned int n);
+
+
 #endif
