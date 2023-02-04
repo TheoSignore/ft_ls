@@ -128,7 +128,7 @@ void	extract_and_format_time(time_t mtim, char* str_mtim)
 	char	date[21];
 	for (int i = 0 ; i < 21 ; i++)
 		date[i] = date_tmp[i + 4];
-	for (int i = 0 ; i < 13 ; i++)
+	for (int i = 0 ; i < 12 ; i++)
 		str_mtim[i] = date[i];
 	if (!is_recent(mtim, date))
 	{
@@ -138,5 +138,4 @@ void	extract_and_format_time(time_t mtim, char* str_mtim)
 		str_mtim[10] = date[18];
 		str_mtim[11] = date[19];
 	}
-	str_mtim[12] = '\0';
 }

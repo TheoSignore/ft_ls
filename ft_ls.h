@@ -23,9 +23,12 @@
 typedef struct s_lens
 {
 	size_t	nlinks;
-	size_t	owner_name;
-	size_t	group_name;
+	size_t	oname;
+	size_t	gname;
+	size_t	major;
+	size_t	minor;
 	size_t	size;
+	size_t	maj_min_siz;
 } lens_t;
 
 typedef struct s_fileinfo
@@ -39,9 +42,9 @@ typedef struct s_fileinfo
 	char*	major; //ui
 	char*	size; //zi
 	char*	blksize; //zi
-	char	mtime[13];
+	char	mtime[12];
 	char*	target;
-	size_t	extra_len;
+	lens_t	lens;
 }	fileinfo_t;
 
 typedef struct s_file

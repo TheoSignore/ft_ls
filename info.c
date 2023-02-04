@@ -92,6 +92,20 @@ void	load_file_info(file_t* file)
 	info->size = ft_litoa(file->stats.st_size);
 	info->blksize = ft_litoa(file->stats.st_blksize);
 	extract_and_format_time(file->stats.st_mtime, info->mtime);
+	info->lens.nlinks = ft_strlen(info->number_of_links);
+	info->lens.oname = ft_strlen(info->owner_name);
+	info->lens.gname = ft_strlen(info->group_name);
+	if (info->file_type == 'c' || info->file_type == 'b')
+	{
+		info->lens.major = ft_strlen(info->major);
+		info->lens.minor = ft_strlen(info->minor);
+		info->lens.maj_min_siz = info->lens.major + 2 + info->lens.minor;
+	}
+	else
+	{
+		info->lens.size = ft_strlen(info->size);
+		info->lens.maj_min_siz = info->lens.size;
+	}
 	if (info->file_type == 'l')
 		info->target = get_link_target(file->path);
 	else
