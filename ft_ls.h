@@ -68,6 +68,7 @@ char*	ft_strdup(const char* str);
 int		ft_strcmp(char* str1, char* str2);
 char*	join_path(char* str1, char* str2);
 void	ft_memcpy(void* dst, void* src, size_t sz);
+void	fill_byte(void* ptr, size_t n, char c);
 
 /* file_and_dir.c */
 file_t*	create_new_file(char* file_path);

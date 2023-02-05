@@ -104,7 +104,18 @@ void	free_file(file_t* fp)
 	{
 		free(fp->path);
 		free_file_chain(fp->content);
-		free(fp->info);
+		if (fp->info)
+		{
+			free(fp->info->number_of_links);
+			free(fp->info->owner_name);
+			free(fp->info->group_name);
+			free(fp->info->minor);
+			free(fp->info->major);
+			free(fp->info->size);
+			free(fp->info->blksize);
+			free(fp->info->target);
+			free(fp->info);
+		}
 		free(fp);
 	}
 }

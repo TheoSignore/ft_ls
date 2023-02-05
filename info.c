@@ -27,13 +27,46 @@ static void	get_perms(mode_t mode, char* buf)
 {
 	buf[0] = (mode & S_IRUSR) ? 'r' : '-';
 	buf[1] = (mode & S_IWUSR) ? 'w' : '-';
-	buf[2] = (mode & S_IXUSR) ? 'x' : '-';
+
+	if (mode & S_ISUID)
+	{
+		if (mode & S_IXUSR)
+			buf[2] = 's';
+		else
+			buf[2] = 'S';
+	}
+	else if (mode & S_IXUSR)
+		buf[2] = 'x';
+	else
+		buf[2] = '-';
+
 	buf[3] = (mode & S_IRGRP) ? 'r' : '-';
 	buf[4] = (mode & S_IWGRP) ? 'w' : '-';
-	buf[5] = (mode & S_IXGRP) ? 'x' : '-';
+	if (mode & S_ISGID)
+	{
+		if (mode & S_IXGRP)
+			buf[5] = 's';
+		else
+			buf[5] = 'S';
+	}
+	else if (mode & S_IXGRP)
+		buf[5] = 'x';
+	else
+		buf[5] = '-';
+
 	buf[6] = (mode & S_IROTH) ? 'r' : '-';
 	buf[7] = (mode & S_IWOTH) ? 'w' : '-';
-	buf[8] = (mode & S_IXOTH) ? 'x' : '-';
+	if (mode & S_ISVTX)
+	{
+		if (mode & S_IXOTH)
+			buf[8] = 't';
+		else
+			buf[8] = 'T';
+	}
+	else if (mode & S_IXOTH)
+		buf[8] = 'x';
+	else
+		buf[8] = '-';
 }
 
 static char*	get_link_target(char* path)
@@ -82,6 +115,7 @@ void	load_file_info(file_t* file)
 	fileinfo_t*	info = malloc(sizeof(fileinfo_t));
 	if (!info)
 		return ;
+	fill_byte(info, sizeof(fileinfo_t), 0);
 	info->file_type = get_type(file->stats.st_mode);
 	get_perms(file->stats.st_mode, info->perms);
 	info->number_of_links = ft_luitoa(file->stats.st_nlink);

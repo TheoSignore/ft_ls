@@ -72,3 +72,10 @@ void	ft_memcpy(void* dst, void* src, size_t sz)
 	for (size_t i = 0 ; i < sz ; i++)
 		src_dst[i] = src_src[i];
 }
+
+void	fill_byte(void* ptr, size_t n, char c)
+{
+	char*	cptr = ptr;
+	for (size_t i = 0 ; i < n ; i++)
+		cptr[i] = c;
+}

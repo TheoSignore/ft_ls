@@ -73,70 +73,99 @@ static void	print_content(file_t* files)
 	}
 }
 
-//static void	print_lldir(file_t* dir)
-//{
-//	allocate and fill content "info" section
-//	get biggest lens of of them
-//	print content
-//}
 
 //11 + 1 + max_len(number_of_hard_links) + 1 + max_len(uname) + 1 + max_len(gname) + 1 + max_len(size) + 1 + 12 + 1 + max_len(file_name);
 
 
-void	fill_byte(void* ptr, size_t n, char c)
+//duck
+
+void	write_and_inc_buffer(char** buff, char* src, size_t n)
 {
-	char*	cptr = ptr;
-	for (size_t i = 0 ; i < n ; i++)
-		cptr[i] = c;
+	for (size_t i = 0; i < n ; i++)
+	{
+		**buff = src[i];
+		(*buff)++;
+	}
+}
+void	reverse_memcpy(void* dst, void* src, size_t n)
+{
+	char*	cdst = dst;
+	char*	csrc = src;
+	n--;
+	while (1)
+	{
+		*cdst = csrc[n];
+		cdst--;
+		if (n == 0)
+			break;
+		n--;
+	}
+}
+
+typedef struct ls_buffer
+{
+	char*	buffer;
+	char*	type;
+	char*	perms;
+	char*	nlink;
+	char*	owner;
+	char*	group;
+	char*	major;
+	char*	minor;
+	char*	size;
+	char*	mtime;
+	char*	name;
+} lsbf_t;
+
+
+void	init_lsbf(lsbf_t* lsbf, char* bf, lens_t* lens)
+{
+	lsbf->buffer = bf;
+	lsbf->type = bf;
+	lsbf->perms = &(bf[1]);
+	lsbf->nlink = &(bf[10 + lens->nlinks]);
+	lsbf->owner = lsbf->nlink + 2;
+	lsbf->group = lsbf->owner + lens->oname + 1;
+	lsbf->major = lsbf->group + lens->gname + lens->major;
+	lsbf->minor = lsbf->group + lens->gname + lens->maj_min_siz;
+	lsbf->size = lsbf->group + lens->gname + lens->maj_min_siz;
+	lsbf->mtime = lsbf->size + 2;
+	lsbf->name = lsbf->mtime + 13;
 }
 
 void	write_info_to_buffer(char* buff, file_t* file, lens_t* lens)
 {
-	size_t	i = 0;
 	fileinfo_t*	info = file->info;
-	buff[i] = info->file_type;
-	i++;
-	ft_memcpy(&(buff[i]), info->perms, 9);
-	i += 9 + 1;
-	i += lens->nlinks - info->lens.nlinks;
-	ft_memcpy(&(buff[i]), info->number_of_links, info->lens.nlinks);
-	i += info->lens.nlinks + 1;
-	ft_memcpy(&(buff[i]), info->owner_name, info->lens.oname);
-	i += info->lens.oname + 1;
-	ft_memcpy(&(buff[i]), info->group_name, info->lens.gname);
-	i += info->lens.oname + 1;
-	size_t	i_save = i;
-	if (buff[0] == 'c' || buff[0] == 'b')
+	lsbf_t	lsbf;
+	init_lsbf(&lsbf, buff, lens);
+	*(lsbf.type) = info->file_type;
+	ft_memcpy(lsbf.perms, info->perms, 9);
+	reverse_memcpy(lsbf.nlink, info->number_of_links, info->lens.nlinks);
+	ft_memcpy(lsbf.owner, info->owner_name, info->lens.oname);
+	ft_memcpy(lsbf.group, info->group_name, info->lens.gname);
+	if (info->file_type == 'c' || info->file_type == 'b')
 	{
-		i += lens->maj_min_siz - info->lens.major - 2 - lens->minor;
-		ft_memcpy(&(buff[i]), info->major, info->lens.major);
-		i += info->lens.major;
-		buff[i] = ',';
-		i = i_save;
-		i += lens->maj_min_siz - info->lens.minor;
-		ft_memcpy(&(buff[i]), info->minor, info->lens.minor);
+		reverse_memcpy(lsbf.minor, info->minor, info->lens.minor);
+		reverse_memcpy(lsbf.major, info->major, info->lens.major);
+		*(lsbf.major + 1) = ',';
 	}
 	else
 	{
-		i += lens->maj_min_siz - info->lens.size;
-		ft_memcpy(&(buff[i]), info->size, info->lens.size);
+		reverse_memcpy(lsbf.size, info->size, info->lens.size);
 	}
-	i = i_save;
-	i += lens->maj_min_siz + 1;
-	ft_memcpy(&(buff[i]), info->mtime, 12);
-	i += 13;
+	ft_memcpy(lsbf.mtime, info->mtime, 12);
 	size_t	filename_len = ft_strlen(file->name);
-	ft_memcpy(&(buff[i]), file->name, filename_len);
-	i += filename_len;
+	ft_memcpy(lsbf.name, file->name, filename_len);
 	if (info->target)
 	{
-		buff[i++] = '-';
-		buff[i++] = '>';
-		i++;
-		ft_memcpy(&(buff[i]), info->target, ft_strlen(info->target));
-		i += ft_strlen(info->target);
+		ft_memcpy((lsbf.name + filename_len), " -> ", 4);
+		filename_len += 4;
+		size_t	target_len = ft_strlen(info->target);
+		ft_memcpy((lsbf.name + filename_len), info->target, target_len);
+		*(lsbf.name + filename_len + target_len) = '\n';
 	}
-	buff[i] = '\n';
+	else
+		*(lsbf.name + filename_len) = '\n';
 }
 
 static void	print_llfile(file_t* file, lens_t* lens)
@@ -145,39 +174,83 @@ static void	print_llfile(file_t* file, lens_t* lens)
 		load_file_info(file);
 	if (!lens)
 		lens = &(file->info->lens);
+	size_t bufflen = 0;
+	char*	buffer = NULL;
 	if (file->info->file_type == 'c' || file->info->file_type == 'b')
-		printf("%c%s %s %s %s %s, %s %s %s\n",
-				file->info->file_type,
-				file->info->perms,
-				file->info->number_of_links,
-				file->info->owner_name,
-				file->info->group_name,
-				file->info->major,
-				file->info->minor,
-				file->info->mtime,
-				file->name);
+	{
+		bufflen = 29 + lens->nlinks + lens->oname + lens->gname + lens->maj_min_siz + ft_strlen(file->name);
+	}
 	else if (file->info->file_type == 'l')
-		printf("%c%s %s %s %s %s %s %s -> %s\n",
-				file->info->file_type,
-				file->info->perms,
-				file->info->number_of_links,
-				file->info->owner_name,
-				file->info->group_name,
-				file->info->size,
-				file->info->mtime,
-				file->name,
-				file->info->target);
+	{
+		bufflen = 33 + lens->nlinks + lens->oname + lens->gname + lens->maj_min_siz + ft_strlen(file->name) + ft_strlen(file->info->target);
+	}
 	else
 	{
-		size_t	bufflen = 29 + lens->nlinks + lens->oname + lens->gname + lens->maj_min_siz + ft_strlen(file->name);
-		char*	buffer = malloc(bufflen);
-		fill_byte(buffer, bufflen - 1, ' ');
-		write_info_to_buffer(buffer, file, lens);
-		write(1, buffer, bufflen);
-		free(buffer);
+		bufflen = 29 + lens->nlinks + lens->oname + lens->gname + lens->maj_min_siz + ft_strlen(file->name);
 	}
+	buffer = malloc(bufflen + 1);
+	fill_byte(buffer, bufflen - 1, ' ');
+	write_info_to_buffer(buffer, file, lens);
+	write(1, buffer, bufflen);
+	free(buffer);
 }
 
+static void	update_lens(lens_t* lens, lens_t* file_lens, char type)
+{
+	if (lens->nlinks < file_lens->nlinks)
+		lens->nlinks = file_lens->nlinks;
+	if (lens->oname < file_lens->oname)
+		lens->oname = file_lens->oname;
+	if (lens->gname < file_lens->gname)
+		lens->gname = file_lens->gname;
+	if (type == 'c' || type == 'b')
+	{
+		if (lens->major < file_lens->major)
+			lens->major = file_lens->major;
+		if (lens->minor < file_lens->minor)
+			lens->minor = file_lens->minor;
+	}
+	else
+	{
+		if (lens->size < file_lens->size)
+			lens->size = file_lens->size;
+	}
+	if (lens->maj_min_siz < file_lens->maj_min_siz)
+		lens->maj_min_siz = file_lens->maj_min_siz;
+}
+
+static void	print_lldir(file_t* dir)
+{
+	if (!(dir->content))
+		return ;
+	lens_t	lens;
+	fill_byte(&lens, sizeof(lens_t), 0);
+	file_t*	cnt = dir->content;
+	long int	total = 0;
+	while (cnt)
+	{
+		if (!cnt->info)
+			load_file_info(cnt);
+		total += cnt->stats.st_blocks;
+		update_lens(&lens, &(cnt->info->lens), cnt->info->file_type);
+		cnt = cnt->next;
+	}
+	char*	stotal = ft_litoa(total / 2);
+	size_t	bufflen = 7 + ft_strlen(stotal);
+	char*	buffer = malloc(bufflen);
+	ft_memcpy(buffer, "total ", 6);
+	ft_memcpy(&(buffer[6]), stotal, bufflen - 7);
+	free(stotal);
+	buffer[bufflen - 1] = '\n';
+	write(1, buffer, bufflen);
+	free(buffer);
+	cnt = dir->content;
+	while (cnt)
+	{
+		print_llfile(cnt, &lens);
+		cnt = cnt->next;
+	}
+}
 
 //trwxrwxrwx <hardlinks> <uname> <gname> <<major>, <minor>|<size>> XXX_XX_XXXXX <name>[ -> target]\n
 //|_________|           |       |       |                         |____________|                  |
@@ -203,11 +276,12 @@ static void	display_dir(file_t* file, char long_listing, int flag)
 			}
 			if (!long_listing)
 				print_content(file->content);
-//			else
-//				print_lldir(file);
+			else
+				print_lldir(file);
 		}
 		else
 		{
+			file->name = file->path;
 			if (!long_listing)
 			{
 				size_t	len = ft_strlen(file->name);
