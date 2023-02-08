@@ -79,7 +79,7 @@ void	get_content(file_t* dir, char options);
 void	extract_and_format_time(time_t mtim, char* str_mtim);
 
 /* info.c */
-void	load_file_info(file_t* file);
+int	load_file_info(file_t* file);
 
 /* ntoa.c */
 char*	ft_litoa(long int n);

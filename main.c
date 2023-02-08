@@ -172,6 +172,11 @@ static void	print_llfile(file_t* file, lens_t* lens)
 {
 	if (!file->info)
 		load_file_info(file);
+	if (!file->info)
+	{
+		printf("can't access file\n");
+		return ;
+	}
 	if (!lens)
 		lens = &(file->info->lens);
 	size_t bufflen = 0;
@@ -231,8 +236,11 @@ static void	print_lldir(file_t* dir)
 	{
 		if (!cnt->info)
 			load_file_info(cnt);
-		total += cnt->stats.st_blocks;
-		update_lens(&lens, &(cnt->info->lens), cnt->info->file_type);
+		if (cnt->info)
+		{
+			total += cnt->stats.st_blocks;
+			update_lens(&lens, &(cnt->info->lens), cnt->info->file_type);
+		}
 		cnt = cnt->next;
 	}
 	char*	stotal = ft_litoa(total / 2);
@@ -247,7 +255,12 @@ static void	print_lldir(file_t* dir)
 	cnt = dir->content;
 	while (cnt)
 	{
-		print_llfile(cnt, &lens);
+		if (cnt->info)
+		{
+			print_llfile(cnt, &lens);
+		}
+		else
+			printf("can't open file\n");
 		cnt = cnt->next;
 	}
 }

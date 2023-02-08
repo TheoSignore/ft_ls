@@ -105,16 +105,19 @@ static char*	get_group(int gid)
 	return (ft_uitoa(gid));
 }
 
-void	load_file_info(file_t* file)
+int	load_file_info(file_t* file)
 {
 	if (file->stats.st_nlink == 0)
 	{
 		if (lstat(file->path, &(file->stats)))
-			return;
+			return (1);
 	}
 	fileinfo_t*	info = malloc(sizeof(fileinfo_t));
 	if (!info)
-		return ;
+	{
+		perror("MALLOC");
+		return (1);
+	}
 	fill_byte(info, sizeof(fileinfo_t), 0);
 	info->file_type = get_type(file->stats.st_mode);
 	get_perms(file->stats.st_mode, info->perms);
@@ -145,4 +148,5 @@ void	load_file_info(file_t* file)
 	else
 		info->target = NULL;
 	file->info = info;
+	return (0);
 }
