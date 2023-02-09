@@ -79,3 +79,18 @@ void	fill_byte(void* ptr, size_t n, char c)
 	for (size_t i = 0 ; i < n ; i++)
 		cptr[i] = c;
 }
+
+void	reverse_memcpy(void* dst, void* src, size_t n)
+{
+	char*	cdst = dst;
+	char*	csrc = src;
+	n--;
+	while (1)
+	{
+		*cdst = csrc[n];
+		cdst--;
+		if (n == 0)
+			break;
+		n--;
+	}
+}

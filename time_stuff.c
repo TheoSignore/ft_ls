@@ -1,5 +1,4 @@
 #include "ft_ls.h"
-#include "time_stuff.h"
 
 static int	year_atoi(char* year)
 {
@@ -27,6 +26,12 @@ static int	month_to_i(char* month)
 		if (month[2] == 'r')
 			return (3);
 		return (5);
+	}
+	if (month[0] == 'A')
+	{
+		if (month[1] == 'u')
+			return (8);
+		return (4);
 	}
 	if (month[1] == 'a')
 		return (1);
@@ -93,6 +98,7 @@ static char	is_recent(time_t timeval, char* str_timeval)
 		return (0);
 	}
 	int	diff = current_mytime.month - mytime_file.month;
+	//printf("%i = %i - %i\n", diff, current_mytime.month, mytime_file.month);
 	diff = diff < 0 ? diff + 12 : diff;
 	if (diff < 6)
 		return (1);

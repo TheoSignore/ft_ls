@@ -1,6 +1,5 @@
 #include "ft_ls.h"
 
-
 file_t*	create_new_file(char* file_path)
 {
 	file_t*	res = malloc(sizeof(file_t));
@@ -8,15 +7,18 @@ file_t*	create_new_file(char* file_path)
 	{
 		res->path = ft_strdup(file_path);
 		size_t	i = 0;
-		while (res->path[i])
-			i++;
-		i--;
-		if (res->path[i] == '/')
+		if (res->path[1])
+		{
+			while (res->path[i])
+				i++;
 			i--;
-		while (i > 0 && res->path[i] != '/')
-			i--;
-		if (i)
-			i++;
+			if (res->path[i] == '/')
+				i--;
+			while (i > 0 && res->path[i] != '/')
+				i--;
+			if (i)
+				i++;
+		}
 		res->name = &(res->path[i]);
 
 		res->stats.st_nlink = 0;
@@ -120,12 +122,33 @@ void	free_file(file_t* fp)
 	}
 }
 
+static void	open_error(char* path, int flag)
+{
+	static char*	error_prefix[2] = { "ft_ls: cannot open directory '", "ft_ls: cannot open symbolic link '" };
+	char	buffer[ (flag ? 30 : 34 ) + ft_strlen(path) + 2];
+	size_t	i = 0;
+	while (error_prefix[flag][i])
+	{
+		buffer[i] = error_prefix[flag][i];
+		i++;
+	}
+	while (*path)
+	{
+		buffer[i] = *path;
+		i++;
+		path++;
+	}
+	buffer[i++] = '\'';
+	buffer[i] = '\0';
+	perror(buffer);
+}
 
 void	get_content(file_t* dir, char options)
 {
 	DIR*	dir_stream = opendir(dir->path);
 	if (!dir_stream)
 	{
+		open_error(dir->path, S_ISLNK(dir->stats.st_mode));
 		return ;
 	}
 	errno = 0;

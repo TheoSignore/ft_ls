@@ -4,7 +4,8 @@ SRCS	:=	main.c \
 			file_and_dir.c \
 			time_stuff.c \
 			info.c \
-			ntoa.c
+			ntoa.c \
+			buffering_and_printing.c
 
 OBJS	=	${SRCS:.c=.o}
 
