@@ -7,12 +7,12 @@ SRCS	:=	main.c \
 			ntoa.c \
 			buffering_and_printing.c
 
-OBJS	=	${SRCS:.c=.o}
+OBJS	=	${SRCS:%.c=.%.o}
 
-DEP		=	${SRCS:.c=.d}
+DEP		=	${SRCS:%.c=.%.d}
 
 #FLAGS	:=  -Wall -Wextra -Werror
-FLAGS	:=  -Wall -Wextra -Werror -g
+FLAGS	:=  -Wall -Wextra -Werror -g -MMD
 #FLAGS	:=  -Wall -Wextra -Werror -g -fsanitize=address
 
 COMPILO	:= gcc
@@ -21,13 +21,10 @@ NAME	:=	ft_ls
 
 .SUFFIXES: .c .o .d
 
-.c.d:
-		${COMPILO} -MM $< -MF ${<:.c=.d}
+.%.o: %.c
+		${COMPILO} ${FLAGS} -c $< -o $@
 
-.c.o:
-		${COMPILO} ${FLAGS} -c $< -o ${<:.c=.o}
-
-all:	dependencies ${NAME}
+all:	${NAME}
 
 clean:
 		rm -f ${OBJS}
@@ -39,8 +36,7 @@ fclean:		clean
 ${NAME}: ${OBJS}
 		${COMPILO} ${FLAGS} -o ${NAME} ${OBJS}
 
-dependencies:
-include ${DEP}
+-include ${DEP}
 
 re:		fclean all
 
