@@ -30,6 +30,7 @@ typedef struct s_lens
 	size_t	minor;
 	size_t	size;
 	size_t	maj_min_siz;
+
 } lens_t;
 
 typedef struct s_fileinfo

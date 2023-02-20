@@ -5,22 +5,26 @@ file_t*	create_new_file(char* file_path)
 	file_t*	res = malloc(sizeof(file_t));
 	if (res)
 	{
-		res->path = ft_strdup(file_path);
-		size_t	i = 0;
-		if (res->path[1])
+		res->path = NULL;
+		res->name = NULL;
+		if (file_path)
 		{
-			while (res->path[i])
-				i++;
-			i--;
-			if (res->path[i] == '/')
+			res->path = ft_strdup(file_path);
+			size_t	i = 0;
+			if (res->path[1])
+			{
+				while (res->path[i])
+					i++;
 				i--;
-			while (i > 0 && res->path[i] != '/')
-				i--;
-			if (i)
-				i++;
+				if (res->path[i] == '/')
+					i--;
+				while (i > 0 && res->path[i] != '/')
+					i--;
+				if (i)
+					i++;
+			}
+			res->name = &(res->path[i]);
 		}
-		res->name = &(res->path[i]);
-
 		res->stats.st_nlink = 0;
 		res->content = NULL;
 		res->info = NULL;
