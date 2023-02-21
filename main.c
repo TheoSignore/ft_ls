@@ -1,26 +1,4 @@
 #include "ft_ls.h"
-#include <stdio.h>
-
-void	print_bits(char c)
-{
-	char	bits = 8;
-	char	buffer[9];
-	int	i = 0;
-
-	buffer[8] = '\n';
-
-	while (bits > 0)
-	{
-		if (c & 128)
-			buffer[i] = '1';
-		else
-			buffer[i] = '0';
-		c <<= 1;
-		bits--;
-		i++;
-	}
-	write(1, buffer, 8);
-}
 
 void    access_error(char* path)
 {
