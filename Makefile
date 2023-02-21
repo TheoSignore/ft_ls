@@ -11,9 +11,9 @@ OBJS	=	${SRCS:%.c=.%.o}
 
 DEP		=	${SRCS:%.c=.%.d}
 
-#FLAGS	:=  -Wall -Wextra -Werror
+#FLAGS	:=  -Wall -Wextra -Werror -MMD
 FLAGS	:=  -Wall -Wextra -Werror -g -MMD
-#FLAGS	:=  -Wall -Wextra -Werror -g -fsanitize=address
+#FLAGS	:=  -Wall -Wextra -Werror -g -MMD -fsanitize=address
 
 COMPILO	:= gcc
 

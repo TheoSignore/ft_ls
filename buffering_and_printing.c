@@ -184,7 +184,7 @@ void	display_dir(file_t* file, char options, int flag)
 	{
 		if (S_ISDIR(file->stats.st_mode))
 		{
-			if (flag != 1 || options & RECURSIVE)
+			if (flag || options & RECURSIVE)
 			{
 				size_t	len = ft_strlen(file->path);
 				char	buffer[len + 2];

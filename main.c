@@ -43,7 +43,7 @@ void    access_error(char* path)
 	perror(buffer);
 }
 
-void	get_dir(char* av, char options, char flag)
+void	get_dir(char* av, char options, char flag, char flag2)
 {
 	file_t*	file = create_new_file(av);
 	if (!file)
@@ -69,20 +69,21 @@ void	get_dir(char* av, char options, char flag)
 	if (S_ISDIR(file->stats.st_mode) && (flag || (!flag && !(file->name[0] == '.' && (!file->name[1] || (file->name[1] == '.' && !file->name[2]))))))
 	{
 		get_content(file, options);
-		display_dir(file, options, 1);
+		write(1, "\n", 1);
+		display_dir(file, options, flag2);
 		if (options & RECURSIVE)
 		{
 			file_t*	tmp = file->content;
 			while (tmp)
 			{
-				get_dir(tmp->path, options, 0);
+				get_dir(tmp->path, options, 0, flag2);
 				tmp = tmp->next;
 			}
 		}
 	}
 	else if (flag)
 	{
-		display_dir(file, options, 1);
+		display_dir(file, options, flag2);
 	}
 	free_file(file);
 }
@@ -107,13 +108,13 @@ int	sort_em(char** av)
 	struct stat	fstat;
 	while (av[dir])
 	{
-		if (lstat(av[dir], &fstat) || S_ISDIR(fstat.st_mode))
+		lstat(av[dir], &fstat);
+		if (S_ISDIR(fstat.st_mode))
 			break;
 		dir++;
 	}
 	if (!av[dir] || !av[dir + 1])
 		return dir;
-	int		res = dir;
 	int		index = dir + 1;
 	while (av[index])
 	{
@@ -127,7 +128,7 @@ int	sort_em(char** av)
 		}
 		index++;
 	}
-	return res;
+	return dir;
 }
 
 int	main(int ac, char** av)
@@ -142,23 +143,15 @@ int	main(int ac, char** av)
 		return (1);
 	}
 	ac = remove_options_and_name(ac, av);
-	int	first_dir_index = sort_em(av);
+	sort_em(av);
 
 	char*	default_path = "."; // string literals are read-only
 	if (!ac)
 		av[ac++] = default_path;
 
-	//printf ("%i\n", ac);
-	//for (int i = 0 ; i < ac ; i++)
-	//{
-	//	printf("[%i]\t\"%s\"\n", i, av[i]);
-	//}
-
 	for (int i = 0 ; i < ac ; i++)
 	{
-		get_dir(av[i], options, 1);
-		if (first_dir_index <= i && i != ac - 1)
-			write(1, "\n", 1);
+		get_dir(av[i], options, 1, ac != 1);
 	}
 
 	return (0);
