@@ -116,7 +116,7 @@ int	main(int ac, char** av)
 	if (options & UNKNOWN)
 	{
 		char	buffer[73] = "ft_ls: invalid option '~'\nValid options are 'l', 'R', 'a', 'r', 't'\n";
-		buffer[24] = options ^ UNKNOWN;
+		buffer[23] = options ^ UNKNOWN;
 		write(2, buffer, 72);
 		return (1);
 	}
